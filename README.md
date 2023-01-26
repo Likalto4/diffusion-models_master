@@ -6,7 +6,7 @@
 ## Author
 - ### Ricardo Montoya del Ángel
 ## Supervisor
-- ### Dr. Robert Marti Marly
+- ### Dr. Robert Martí Marly
 
 ------------------------------------------------------------------------------------------------------------------------------
 
