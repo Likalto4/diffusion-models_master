@@ -156,6 +156,7 @@ def main():
                                         'path': image.dcm_path,
                                         'json_path': image.json_path,
                                         'client_status': client.status.value,
+                                        'marks': True if image.marks else False,
                                     }, index=[0])
                                 # go through the tags and save the json-contained information
                                 for tag in tags:
