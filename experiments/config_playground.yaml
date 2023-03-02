@@ -3,10 +3,12 @@
 # 1. Image processing
 processing:
   # dataset name
-  dataset: "database/images" # name of the dataset or directory in repo
+  dataset: "data/images/breast10p" # name of the dataset or directory in repo
   # image size or resolution to resize
   resolution: 64
   interpolation: "BILINEAR"
+  # normalisation
+  normalisation_value: 4095.0
   # batch size for dataloader
   batch_size: 32
   # number of workers for dataloader
