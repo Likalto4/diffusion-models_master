@@ -32,11 +32,83 @@ import logging
 from accelerate.logging import get_logger
 from accelerate import Accelerator
 
+# extra
+import pandas as pd
+from PIL import Image
+import csv
+
 # Check the diffusers version
 check_min_version("0.13.0.dev0")
 
 # set the logger
 logger = get_logger(__name__, log_level="INFO") # allow from info level and above
+
+# create a dataset class for our breast images
+class breast_dataset(torch.utils.data.Dataset):
+    def __init__(self, csv_path: Path, images_dir: Path, transform=None):
+        """_summary_
+
+        Args:
+            csv_path (Path): path to the csv file with the filenames
+            images_dir (Path): path to the folder with the images
+            transform (function, optional): transformation function. Usually pytorch.Transform. Defaults to None.
+        """
+        self.names = pd.read_csv(csv_path, header=None) # read csv file
+        self.images_dir = images_dir # path to image folder
+        self.transform = transform # transform to apply to images
+    
+    def __len__(self):
+        """returns the length of the dataset
+
+        Returns:
+            int: length of the dataset
+        """
+        return len(self.names)
+    
+    def __getitem__(self, idx: int):
+        """returns the image at index idx
+
+        Args:
+            idx (int): index in the csv file
+
+        Returns:
+            PIL.Image: PIL image
+        """
+        img_path = self.images_dir / self.names.iloc[idx, 0] # get image path
+        image = Image.open(img_path) # open image
+        # image = np.array(image, dtype=np.float32) # convert to numpy array
+        if self.transform: # apply transform if it exists
+            image = self.transform(image)
+            
+        return image
+    
+    def set_transform(self, transform):
+        """set the transform to apply to the images
+
+        Args:
+            transform (function): transform to apply to the images
+        """
+        self.transform = transform
+
+    def __repr__(self) -> str:
+        return f"({len(self)} images)"
+
+def load_breast_dataset(folder_dir:Path):
+    # get directory name
+    folder_name = folder_dir.name
+    # check if the csv file with the filenames already exists
+    csv_path = folder_dir.parent.parent / 'filenames' / f'{folder_name}.csv'
+    if not csv_path.exists(): # if not, create it
+        with open(csv_path, mode='w', newline='') as file:
+            writer = csv.writer(file)
+            for filename in os.listdir(folder_dir):
+                if filename.endswith(".png"):
+                    writer.writerow([filename])
+    # now we can create the dataset
+    dataset = breast_dataset(csv_path, images_dir= folder_dir)
+    
+    return dataset    
+
 
 ######MAIN######
 def main():
@@ -81,33 +153,29 @@ def main():
     ### 1. Dataset loading and preprocessing
     # Dataset loading
     data_dir = repo_path / config['processing']['dataset']
-    dataset = load_dataset("imagefolder", data_dir=data_dir, name='breast10p', split='train')
+    dataset = load_breast_dataset(data_dir)
     logger.info(f"Dataset loaded with {len(dataset)} images") # show info about the dataset
     # Define data augmentations
+    class ToFloat32Tensor(object):
+        """
+        Converts a PIL Image to a PyTorch tensor with dtype float32, and normalises it.
+        """
+        def __call__(self, image):
+            # Convert PIL Image to PyTorch tensor with dtype float32
+            tensor = ToTensor()(image).float()/config['processing']['normalisation_value']
+            return tensor
+    
     preprocess = Compose(
         [
             Resize(config['processing']['resolution'], interpolation= InterpolationMode.BILINEAR), #getattr(InterpolationMode, config['processing']['interpolation'])),  # Smaller edge is resized to 256 preserving aspect ratio
             CenterCrop(config['processing']['resolution']),  # Center crop to the desired squared resolution
             #RandomHorizontalFlip(),  # Horizontal flip may not be a good idea if we want generation only one laterality
-            ToTensor(),  # Convert to tensor (0, 1)
-            Normalize([0.5], [0.5]),  # Map to (-1, 1) as a way to make data more similar to a Gaussian distribution
+            ToFloat32Tensor(),  # Convert to tensor (0, 1)
+            Normalize(mean=[0.5], std=[0.5]),  # Map to (-1, 1) as a way to make data more similar to a Gaussian distribution
         ]
     )
-    def transform(batch_dict):
-        """Transform the images in the dataset to the desired format, this generates a dictionary with the key "images" containing the images in a list.
-        It should include a formatting function as preproces. A formatting function is a callable that takes a batch as (dict) and returns a batch also as (dict).
-        The formatting function is defined outside of the function (not self-contained)
-
-        Args:
-            batch_dict (dict): dictionary containing the images in a list under the key "image"
-
-        Returns:
-            dict: dictionary containing the images in a list under the key "images"
-        """
-        images = [preprocess(image.convert("F")) for image in batch_dict["image"]] # F for float images in PIL
-        return {"images": images}
     #set the transform function to the dataset
-    dataset.set_transform(transform)
+    dataset.set_transform(preprocess)
     # Create the dataloader
     train_dataloader = torch.utils.data.DataLoader(
         dataset, batch_size=config['processing']['batch_size'], num_workers= config['processing']['num_workers'], shuffle=True
@@ -185,7 +253,8 @@ def main():
         # Loop over the batches
         for step, batch in enumerate(train_dataloader):
             # Get the images and send them to device (1st thing in device)
-            clean_images = batch["images"].to(device)
+            # clean_images = batch["images"].to(device)
+            clean_images = batch.to(device)
             # Sample noise to add to the images and also send it to device(2nd thing in device)
             noise = torch.randn(clean_images.shape).to(clean_images.device)
             # batch size variable for later use
