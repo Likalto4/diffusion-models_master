@@ -5,19 +5,19 @@ processing:
   # dataset name
   dataset: "data/images/breast10p" # name of the dataset or directory in repo
   # image size or resolution to resize
-  resolution: 64
+  resolution: 512
   interpolation: "BILINEAR"
   # normalisation
   normalisation_value: 4095.0
   # batch size for dataloader
-  batch_size: 32
+  batch_size: 8
   # number of workers for dataloader
-  num_workers: 8 # 0 means no extra processes are used (run in main process)
+  num_workers: 12 # 0 means no extra processes are used (run in main process)
 
 # 2. Model
 model:
-  in_channels: 1 # The number of channels in the input image, RGB -> 3
-  out_channels: 1 # The number of channels in the output image, RGB -> 3
+  in_channels: 4 # The number of channels to the Unet
+  out_channels: 4 # The number of channels from the Unet
   layers_per_block: 2 # How many ResNet layers to use in each Unet block
   block_out_channels: !!python/tuple # The output channels for each block # More channels -> more parameters # The length of this tuple is the number of blocks
   - 128
@@ -43,13 +43,14 @@ model:
 
 # 3. Training
 training:
-  num_epochs: 100 # Number of epochs to train for
+  num_epochs: 50 # Number of epochs to train for
   gradient_accumulation:
-    steps: 1 # Number of gradient accumulation steps
+    steps: 4 # Number of gradient accumulation steps
   mixed_precision:
-    type: 'no'
+    type: 'no' # Type of mixed precision to use
   gradient_clip:
     max_norm: 1.0 # Maximum norm for gradient clipping
+  enable_xformers_memory_efficient_attention: True
   optimizer:
     learning_rate: 1.0e-4 # Learning rate for the optimizer
     beta_1: 0.95 # Beta 1 for the AdamW optimizer
@@ -67,11 +68,11 @@ training:
 saving:
   local:
     outputs_dir: 'results/pipelines' # Parent directory for saving outputs
-    pipeline_name: 'unconditional_64_100eps' # Name of the pipeline
+    pipeline_name: 'unconditional_vae_boost' # Name of the pipeline
     checkpoint_frequency: 10000 # How often to save checkpoints (in steps)
-    saving_frequency: 10 # How often to save the model (in epochs)
+    saving_frequency: 5 # How often to save the model (in epochs)
   hf:
-    repo_name: 'Breast_unconditional_64_100' # Name of the HF repo
+    repo_name: 'Breast_unconditional_vae' # Name of the HF repo
     # model_card_path: 'experiments/model_card.yaml' # Path to model card
 logging:
   logger_name: 'tensorboard' # Name of the logger
