@@ -1,0 +1,22 @@
+---
+license: mit
+tags:
+- pytorch
+- diffusers
+- unconditional-image-generation
+- diffusion-models-class
+---
+
+This model is a latent diffusion model for unconditional image generation of mammograms of size 512vs512.
+The model was trained with 1000 images using the [DDPM](https://arxiv.org/abs/2006.11239) architecture.
+The model was trained for 50 epochs with a batch size of 8 and gradient accumulation of 4, using around 9 GB of GPU memory. 
+
+## Usage
+
+```python
+from diffusers import DDPMPipeline
+
+pipeline = DDPMPipeline.from_pretrained({hub_model_id})
+image = pipeline().images[0]
+image
+```

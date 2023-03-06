@@ -72,7 +72,7 @@ saving:
     checkpoint_frequency: 10000 # How often to save checkpoints (in steps)
     saving_frequency: 5 # How often to save the model (in epochs)
   hf:
-    repo_name: 'Breast_unconditional_vae' # Name of the HF repo
+    repo_name: 'Latent_Breast_unconditional_noboost' # Name of the HF repo
     # model_card_path: 'experiments/model_card.yaml' # Path to model card
 logging:
   logger_name: 'tensorboard' # Name of the logger
