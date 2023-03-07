@@ -287,29 +287,30 @@ def main():
         pbar.set_description(f"Epoch {epoch}")
         # Loop over the batches
         for step, batch in enumerate(train_dataloader):
-            # Get the images and send them to device (1st thing in device)
-            # clean_images = batch.to(device)
-            # expand the batch to have three channels
-            batch = batch.expand(-1, 3, -1, -1).to(weight_dtype)
-            latents = vae.encode(batch).latent_dist.sample()
-            latents = latents * vae.config.scaling_factor
-            # Sample noise to add to the images and also send it to device(2nd thing in device)
-            # noise = torch.randn(clean_images.shape).to(clean_images.device)
-            noise = torch.randn_like(latents)
-            # batch size variable for later use
-            bs = latents.shape[0]
-            # Sample a random timestep for each image
-            timesteps = torch.randint( #create bs random integers from init=0 to end=timesteps, and send them to device (3rd thing in device)
-                low= 0,
-                high= noise_scheduler.num_train_timesteps,
-                size= (bs,),
-                device=latents.device ,
-            ).long() #int64
+            with accelerator.accumulate(model): # moved to the beginning of the loop
+                # Get the images and send them to device (1st thing in device)
+                # clean_images = batch.to(device)
+                # expand the batch to have three channels
+                batch = batch.expand(-1, 3, -1, -1).to(weight_dtype)
+                latents = vae.encode(batch).latent_dist.sample()
+                latents = latents * vae.config.scaling_factor
+                # Sample noise to add to the images and also send it to device(2nd thing in device)
+                # noise = torch.randn(clean_images.shape).to(clean_images.device)
+                noise = torch.randn_like(latents)
+                # batch size variable for later use
+                bs = latents.shape[0]
+                # Sample a random timestep for each image
+                timesteps = torch.randint( #create bs random integers from init=0 to end=timesteps, and send them to device (3rd thing in device)
+                    low= 0,
+                    high= noise_scheduler.num_train_timesteps,
+                    size= (bs,),
+                    device=latents.device ,
+                ).long() #int64
+                
+                # Forward diffusion process: add noise to the clean images according to the noise magnitude at each timestep
+                noisy_images = noise_scheduler.add_noise(latents, noise, timesteps)
+                # gradient accumulation starts here
             
-            # Forward diffusion process: add noise to the clean images according to the noise magnitude at each timestep
-            noisy_images = noise_scheduler.add_noise(latents, noise, timesteps)
-            # gradient accumulation starts here
-            with accelerator.accumulate(model):
                 # Get the model prediction, #### This part changes according to the prediction type (e.g. epsilon, sample, etc.)
                 noise_pred = model(noisy_images, timesteps).sample # sample tensor
                 # Calculate the loss
