@@ -44,7 +44,7 @@ import csv
 from packaging import version
 
 # Check the diffusers version
-check_min_version("0.13.0.dev0")
+check_min_version("0.15.0.dev0")
 
 # set the logger
 logger = get_logger(__name__, log_level="INFO") # allow from info level and above
@@ -147,7 +147,7 @@ def main():
         level=logging.INFO,
     )
     # show the accelerator state as first log message
-    logger.info(accelerator.state)
+    logger.info(accelerator.state, main_process_only=False)
     # set the level of verbosity for the datasets and diffusers libraries, depending on the process type
     if accelerator.is_local_main_process:
         datasets.utils.logging.set_verbosity_warning()
