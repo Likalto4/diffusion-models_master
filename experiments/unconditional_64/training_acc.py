@@ -255,7 +255,7 @@ def main():
         pbar = tqdm(total=num_update_steps_per_epoch)
         pbar.set_description(f"Epoch {epoch}")
         # Loop over the batches
-        for step, batch in enumerate(train_dataloader):
+        for _, batch in enumerate(train_dataloader):
             # Get the images and send them to device (1st thing in device)
             # clean_images = batch["images"].to(device)
             clean_images = batch.to(device)
