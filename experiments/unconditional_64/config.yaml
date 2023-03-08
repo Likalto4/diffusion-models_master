@@ -43,7 +43,7 @@ model:
 
 # 3. Training
 training:
-  num_epochs: 100 # Number of epochs to train for
+  num_epochs: 50 # Number of epochs to train for
   gradient_accumulation:
     steps: 1 # Number of gradient accumulation steps
   mixed_precision:

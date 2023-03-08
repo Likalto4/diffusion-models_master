@@ -292,7 +292,7 @@ def main():
                 # Get the images and send them to device (1st thing in device)
                 batch = batch.expand(-1, 3, -1, -1).to(weight_dtype) # expand the batch to have three channels
                 latents = vae.encode(batch).latent_dist.sample() # sample from the latent distribution
-                latents = latents * vae.config.scaling_factor # scale the latents so they are around -1 and 1
+                latents = latents * vae.config.scaling_factor # scale the latents so they are around -1 and 1 (but not exactly)
                 # Sample noise to add to the images and also send it to device(2nd thing in device)
                 noise = torch.randn_like(latents)
                 # batch size variable for later use
@@ -354,28 +354,28 @@ def main():
             if epoch % config['logging']['images']['freq_epochs'] == 0 or epoch == num_epochs - 1: # if in image saving epoch or last one
                 # unwrape the model
                 model = accelerator.unwrap_model(model)
-                # create pipeline
-                pipeline = DDPMPipeline(unet=model, scheduler=noise_scheduler)
-                # create generator to make generation deterministic
-                generator = torch.Generator(device=pipeline.device).manual_seed(0)
-                # generate images
-                images = pipeline(
-                    batch_size=config['logging']['images']['batch_size'],
-                    generator=generator,
-                    output_type='numpy' # output as numpy array
-                ).images # get the numpy images
-                # take images back to 255 range
-                # images_denorm = (images*255).astype('uint8')
-                # send images to logger
+                # create random noise
+                latent_inf = torch.rand_like(latents)
+                latent_inf *= noise_scheduler.init_noise_sigma # init noise is one in vanilla case
+                # denoise images
+                for t in tqdm(noise_scheduler.timesteps): # markov chain
+                    latent_inf = noise_scheduler.scale_model_input(latent_inf, t) # # Apply scaling, no change in vanilla case
+                    with torch.no_grad(): # predict the noise residual with the unet
+                        noise_pred = model(latent_inf, t).sample
+                    latent_inf = noise_scheduler.step(noise_pred, t, latent_inf).prev_sample # compute the previous noisy sample x_t -> x_t-1
+                # log images
                 if config['logging']['logger_name'] == 'tensorboard':
-                    accelerator.get_tracker('tensorboard').add_images(
-                        "test_samples", images.transpose(0, 3, 1, 2), epoch
-                    )
-                elif config['logging']['logger_name'] == 'wandb':
-                    accelerator.get_tracker('wandb').log(
-                        {"test_samples": [wandb.Image(image) for image in images], "epoch": epoch},
-                        step=global_step,
-                    )
+                    for i in range (4):
+                        accelerator.get_tracker('tensorboard').add_images(
+                            f"latent{i}", latent_inf[:,i:i+1], epoch
+                        )
+                    # add also the histogram of the image
+
+                # elif config['logging']['logger_name'] == 'wandb':
+                #     accelerator.get_tracker('wandb').log(
+                #         {"test_samples": [wandb.Image(image) for image in images], "epoch": epoch},
+                #         step=global_step,
+                #     )
                 # save model
             if epoch % config['saving']['local']['saving_frequency'] == 0 or epoch == num_epochs - 1: # if in model saving epoch or last one
                 # unwrape the model

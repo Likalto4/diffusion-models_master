@@ -45,7 +45,7 @@ model:
 training:
   num_epochs: 50 # Number of epochs to train for
   gradient_accumulation:
-    steps: 4 # Number of gradient accumulation steps
+    steps: 8 # Number of gradient accumulation steps
   mixed_precision:
     type: 'no' # Type of mixed precision to use
   gradient_clip:
@@ -70,7 +70,7 @@ saving:
     outputs_dir: 'results/pipelines' # Parent directory for saving outputs
     pipeline_name: 'unconditional_vae_boost' # Name of the pipeline
     checkpoint_frequency: 10000 # How often to save checkpoints (in steps)
-    saving_frequency: 5 # How often to save the model (in epochs)
+    saving_frequency: 10 # How often to save the model (in epochs)
   hf:
     repo_name: 'Latent_Breast_unconditional_noboost' # Name of the HF repo
     # model_card_path: 'experiments/model_card.yaml' # Path to model card
@@ -78,5 +78,5 @@ logging:
   logger_name: 'tensorboard' # Name of the logger
   dir_name: 'logs' # Name of the logging directory
   images:
-    freq_epochs: 10 # How often to save images (in epochs)
-    batch_size: 8 # Batch size for image generation
+    freq_epochs: 5 # How often to save images (in epochs)
+    batch_size: 2 # Batch size for image generation
