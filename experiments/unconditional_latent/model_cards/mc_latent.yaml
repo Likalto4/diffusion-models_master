@@ -1,0 +1,22 @@
+---
+license: mit
+tags:
+- pytorch
+- diffusers
+- unconditional-image-generation
+- diffusion-models-class
+---
+
+This is a latent diffusion model for generation of mammograms with size 64x64 in the latent space.
+It was trained with 4K images in the latent space (10% of the original dataset) for 50 epochs.
+Images in the latent space have size (4,64,64) and can generate images of 512x512 when decoded using the VAE. 
+
+## Usage
+
+```python
+from diffusers import DDPMPipeline
+
+pipeline = DDPMPipeline.from_pretrained({hub_model_id})
+image = pipeline().images[0]
+image
+```

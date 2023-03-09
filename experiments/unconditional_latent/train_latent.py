@@ -45,7 +45,8 @@ device = torch.device("cuda:" + str(selected_gpu) if torch.cuda.is_available() e
 print(f'The device is: {device}\n')
 
 # load the config file
-with open('config.yaml') as file: # expects the config file to be in the same directory
+exp_path = Path.cwd().resolve()
+with open(exp_path/'config_files/latent_32.yaml') as file: # expects the config file to be in the same directory
     config = yaml.load(file, Loader=yaml.FullLoader)
 
 # define logging directory
@@ -181,8 +182,8 @@ for epoch in range(num_epochs):
     pbar = tqdm(total=num_update_steps_per_epoch)
     pbar.set_description(f"Epoch {epoch}")
     # Loop over the batches
-    for _, latents in enumerate(train_dataloader):
-        with accelerator.accumulate(model): # moved to the beginning of the loop
+    for latents in train_dataloader:
+        with accelerator.accumulate(model): # start gradient accumulation
             # Sample noise to add to the images and also send it to device(2nd thing in device)
             noise = torch.randn_like(latents)
             # batch size variable for later use
@@ -197,7 +198,6 @@ for epoch in range(num_epochs):
             # Forward diffusion process: add noise to the clean images according to the noise magnitude at each timestep
             noisy_images = noise_scheduler.add_noise(latents, noise, timesteps)
             
-            # gradient accumulation starts here (maybe at the top of the loop?)
             # Get the model prediction, #### This part changes according to the prediction type (e.g. epsilon, sample, etc.)
             noise_pred = model(noisy_images, timesteps).sample # sample tensor
             # Calculate the loss
@@ -209,14 +209,14 @@ for epoch in range(num_epochs):
             
             # Backpropagate the loss
             accelerator.backward(loss) #loss is used as a gradient, coming from the accumulation of the gradients of the loss function
-            # gradient clipping
-            if accelerator.sync_gradients:
+            
+            if accelerator.sync_gradients: # gradient clipping
                 accelerator.clip_grad_norm_(model.parameters(), config['training']['gradient_clip']['max_norm'])
             # Update
             optimizer.step() # update the weights
             lr_scheduler.step() # Update the learning rate
             optimizer.zero_grad() # reset the gradients
-        #gradient accumulation ends here
+        #### gradient accumulation ends here
         
         # logging and checkpoint saving happens only if the gradients are synced
         if accelerator.sync_gradients:
@@ -245,8 +245,11 @@ for epoch in range(num_epochs):
             # unwrape the model
             model = accelerator.unwrap_model(model)
             # create random noise
-            latent_inf = torch.rand_like(noise)
-            latent_inf *= noise_scheduler.init_noise_sigma # init noise is one in vanilla case
+            latent_inf = torch.randn(
+                config['logging']['images']['batch_size'], config['model']['in_channels'],
+                config['processing']['resolution'], config['processing']['resolution'], device=accelerator.device
+            )
+            latent_inf *= noise_scheduler.init_noise_sigma # init noise is 1.0 in vanilla case
             # denoise images
             for t in tqdm(noise_scheduler.timesteps): # markov chain
                 latent_inf = noise_scheduler.scale_model_input(latent_inf, t) # # Apply scaling, no change in vanilla case
