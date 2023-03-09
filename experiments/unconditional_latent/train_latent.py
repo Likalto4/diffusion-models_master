@@ -39,14 +39,10 @@ check_min_version("0.15.0.dev0")
 logger = get_logger(__name__, log_level="INFO") # allow from info level and above
 
 ### 0. General setups
-# device selection (may be blocked by the accelerator)
-selected_gpu = 0 #select the GPU to use
-device = torch.device("cuda:" + str(selected_gpu) if torch.cuda.is_available() else "cpu")
-print(f'The device is: {device}\n')
-
 # load the config file
 exp_path = Path.cwd().resolve()
-with open(exp_path/'config_files/latent_32.yaml') as file: # expects the config file to be in the same directory
+config_path = exp_path / 'config_files/latent_32.yaml' # configuration file path (beter to call it from the args parser)
+with open(config_path) as file: # expects the config file to be in the same directory
     config = yaml.load(file, Loader=yaml.FullLoader)
 
 # define logging directory
@@ -153,6 +149,8 @@ model, optimizer, train_dataloader, lr_scheduler = accelerator.prepare(
 if accelerator.is_main_process:
     run = os.path.split(__file__)[-1].split(".")[0] # get the name of the script
     accelerator.init_trackers(project_name=run) # intialize a run for all trackers
+    accelerator.get_tracker('wandb').save(str(config_path)) # save configuration file
+
 # global trackers
 total_batch_size = config['processing']['batch_size'] * accelerator.num_processes * config['training']['gradient_accumulation']['steps'] # considering accumulated and distributed training
 num_update_steps_per_epoch = math.ceil(len(train_dataloader) / config['training']['gradient_accumulation']['steps']) # take into account the gradient accumulation (divide)
@@ -262,13 +260,11 @@ for epoch in range(num_epochs):
                     accelerator.get_tracker('tensorboard').add_images(
                         f"latent{i}", latent_inf[:,i:i+1], epoch
                     )
-                # add also the histogram of the image
-
-            # elif config['logging']['logger_name'] == 'wandb':
-            #     accelerator.get_tracker('wandb').log(
-            #         {"test_samples": [wandb.Image(image) for image in images], "epoch": epoch},
-            #         step=global_step,
-            #     )
+            elif config['logging']['logger_name'] == 'wandb':
+                accelerator.get_tracker('wandb').log(
+                    {"latent 1": [wandb.Image(latent_inf[i,0], mode='F') for i in range(config['logging']['images']['batch_size'])]},
+                    step=epoch,
+                )
             # save model
         if epoch % config['saving']['local']['saving_frequency'] == 0 or epoch == num_epochs - 1: # if in model saving epoch or last one
             # unwrape the model

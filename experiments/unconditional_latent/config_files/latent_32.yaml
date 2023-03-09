@@ -45,7 +45,7 @@ model:
 training:
   num_epochs: 50 # Number of epochs to train for
   gradient_accumulation:
-    steps: 1 # Number of gradient accumulation steps
+    steps: 4 # Number of gradient accumulation steps
   mixed_precision:
     type: 'no' # Type of mixed precision to use
   gradient_clip:
@@ -75,7 +75,7 @@ saving:
     repo_name: 'Latent_Breast_lspace' # Name of the HF repo
     model_card_path: 'model_cards/mc_latent.yaml' # # path from experiment directory
 logging:
-  logger_name: 'tensorboard' # Name of the logger
+  logger_name: 'wandb' # Name of the logger
   dir_name: 'logs' # Name of the logging directory
   images:
     freq_epochs: 5 # How often to save images (in epochs)
