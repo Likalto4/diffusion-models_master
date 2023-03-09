@@ -169,7 +169,7 @@ def main():
         latents = latents * vae.config.scaling_factor # scale the latents so they are around -1 and 1 (but not exactly)
 
         # save latents as torch tensor withoput gradients
-        latents = latents.detach()
+        latents = latents.detach().cpu()[0]
         torch.save(latents, repo_path / 'data/images/breast10p_latents'/f'{Path(name).stem}.pt')
 
 if __name__ == '__main__':
