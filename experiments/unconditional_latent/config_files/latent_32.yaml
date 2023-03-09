@@ -45,7 +45,7 @@ model:
 training:
   num_epochs: 50 # Number of epochs to train for
   gradient_accumulation:
-    steps: 4 # Number of gradient accumulation steps
+    steps: 8 # Number of gradient accumulation steps
   mixed_precision:
     type: 'no' # Type of mixed precision to use
   gradient_clip:
@@ -68,11 +68,11 @@ training:
 saving:
   local:
     outputs_dir: 'results/pipelines' # Parent directory for saving outputs
-    pipeline_name: 'latent_32' # Name of the pipeline
+    pipeline_name: 'latent_32_ga-8' # Name of the pipeline
     checkpoint_frequency: 10000 # How often to save checkpoints (in steps)
     saving_frequency: 10 # How often to save the model (in epochs)
   hf:
-    repo_name: 'Latent_Breast_lspace' # Name of the HF repo
+    repo_name: 'Latent_Breast' # Name of the HF repo
     model_card_path: 'model_cards/mc_latent.yaml' # # path from experiment directory
 logging:
   logger_name: 'wandb' # Name of the logger
