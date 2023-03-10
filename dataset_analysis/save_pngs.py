@@ -16,12 +16,12 @@ import cv2 as cv
 from tqdm import tqdm
 
 def main():
-
     metadata_path = 'metadata/metadata_pixelspacing.csv' # path to the metadata file
     metadata = pd.read_csv(metadata_path)
     paths = metadata['path'].values # get paths
-
-    for i in tqdm(range(len(paths)//10)):
+    save_dir = repo_path / 'data/images/breast40k'
+    save_dir.mkdir(parents=False, exist_ok=True) # create the save directory if needed
+    for i in tqdm(range(paths)):
         path = paths[i]
         # load the dicom image
         ds = pydicom.dcmread(path)
@@ -34,7 +34,7 @@ def main():
         # get image id from metadata
         image_id = metadata.iloc[i]['image_id']
         # save the image
-        cv.imwrite(f'images/{image_id}.png', image_array)
+        cv.imwrite(str(save_dir / f'{image_id}.png'), image_array)
 
 if __name__ == '__main__':
     main()

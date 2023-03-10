@@ -150,10 +150,9 @@ def main():
     train_dataloader = torch.utils.data.DataLoader(
         dataset, batch_size=1, num_workers= config['processing']['num_workers'], shuffle=False # need order
     )
-
+    # VAE
     vae = AutoencoderKL.from_pretrained("CompVis/stable-diffusion-v1-4", subfolder="vae")
     vae.requires_grad_(False)
-    # send vae to accelerator
     vae.to(device)
 
     for i, batch in enumerate(tqdm(train_dataloader)):
