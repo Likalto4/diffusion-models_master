@@ -21,7 +21,7 @@ def main():
     paths = metadata['path'].values # get paths
     save_dir = repo_path / 'data/images/breast40k'
     save_dir.mkdir(parents=False, exist_ok=True) # create the save directory if needed
-    for i in tqdm(range(paths)):
+    for i in tqdm(range(len(paths))):
         path = paths[i]
         # load the dicom image
         ds = pydicom.dcmread(path)

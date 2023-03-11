@@ -93,13 +93,6 @@ def main():
         down_block_types= config['model']['down_block_types'],
         up_block_types=config['model']['up_block_types'],
     )
-    # load vae and freeze
-    weight_dtype = torch.float32
-    if accelerator.mixed_precision == "fp16":
-        weight_dtype = torch.float16
-    elif accelerator.mixed_precision == "bf16":
-        weight_dtype = torch.bfloat16
-
 
     # enable memory efficient attention
     if config['training']['enable_xformers_memory_efficient_attention']:
@@ -133,10 +126,12 @@ def main():
         name= config['training']['lr_scheduler']['name'], # name of the scheduler
         optimizer= optimizer, # optimizer to use
         num_warmup_steps= config['training']['lr_scheduler']['num_warmup_steps'] * config['training']['gradient_accumulation']['steps'],
-        num_training_steps= (len(train_dataloader) * num_epochs), #* config['training']['gradient_accumulation']['steps']?
+        num_training_steps= (len(train_dataloader) * num_epochs), #* config['training']['gradient_accumulation']['steps']? # no because this changes every step
     )
     # Noise scheduler
     noise_scheduler = DDPMScheduler(
+        beta_start=config['training']['noise_scheduler']['beta_start'],
+        beta_end=config['training']['noise_scheduler']['beta_end'],
         num_train_timesteps=config['training']['noise_scheduler']['num_train_timesteps'],
         beta_schedule=config['training']['noise_scheduler']['beta_schedule'],
     )
@@ -150,7 +145,7 @@ def main():
     if accelerator.is_main_process:
         run = os.path.split(__file__)[-1].split(".")[0] # get the name of the script
         accelerator.init_trackers(project_name=run) # intialize a run for all trackers
-        accelerator.get_tracker('wandb').save(str(config_path)) # save configuration file
+        accelerator.get_tracker('wandb').save(str(config_path)) if config['logging']['logger_name'] == 'wandb' else None # save the config file in the wandb run
 
     # global trackers
     total_batch_size = config['processing']['batch_size'] * accelerator.num_processes * config['training']['gradient_accumulation']['steps'] # considering accumulated and distributed training
