@@ -1,0 +1,8 @@
+processing:
+  # dataset name
+  dataset: "data/images/breast40k" # name of the dataset to convert to latent space
+  # image size or resolution to resize
+  resolution: 512
+  # normalisation
+  normalisation_value: 4095.0
+  num_workers: 12 # 0 means no extra processes are used (run in main process)

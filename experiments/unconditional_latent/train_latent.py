@@ -14,7 +14,7 @@ import math
 import torch
 import torch.nn.functional as F
 from tqdm import tqdm
-
+import numpy as np
 import wandb
 import datasets, diffusers
 from diffusers import (
@@ -31,6 +31,7 @@ from accelerate import Accelerator
 
 # extra
 from packaging import version
+
 
 # Check the diffusers version
 check_min_version("0.15.0.dev0")
@@ -171,7 +172,7 @@ def main():
     for epoch in range(num_epochs):
         #set the model to training mode explicitly
         model.train()
-        train_loss = 0.0
+        train_loss = []
         # Create a progress bar
         pbar = tqdm(total=num_update_steps_per_epoch)
         pbar.set_description(f"Epoch {epoch}")
@@ -199,7 +200,8 @@ def main():
                 
                 # Gather the losses across all processes for logging (if we use distributed training).
                 avg_loss = accelerator.gather(loss.repeat(config['processing']['batch_size'])).mean()
-                train_loss += avg_loss.item() / config['training']['gradient_accumulation']['steps']
+                # append the loss to the train loss
+                train_loss.append(avg_loss.item())
                 
                 # Backpropagate the loss
                 accelerator.backward(loss) #loss is used as a gradient, coming from the accumulation of the gradients of the loss function
@@ -217,8 +219,10 @@ def main():
                 # Update the progress bar
                 pbar.update(1)
                 global_step += 1
-                accelerator.log({"loss": train_loss, "log-loss": torch.log(loss.detach()).item()}, step=global_step) #accumulated loss
-                train_loss = 0.0 # reset the train for next accumulation
+                # take the mean of the accumulated loss
+                train_loss = np.mean(train_loss)
+                accelerator.log({"loss": train_loss, "log-loss": np.log(train_loss)}, step=global_step) #accumulated loss
+                train_loss = [] # reset the train for next accumulation
                 # Save the checkpoint
                 if global_step % config['saving']['local']['checkpoint_frequency'] == 0: # if saving time
                     if accelerator.is_main_process: # only if in main process
@@ -236,13 +240,12 @@ def main():
         ##### 4. Saving the model and visual samples
         if accelerator.is_main_process: # only main process saves the model
             if epoch % config['logging']['images']['freq_epochs'] == 0 or epoch == num_epochs - 1: # if in image saving epoch or last one
-                # unwrape the model
-                model = accelerator.unwrap_model(model)
                 # create random noise
-                latent_inf = torch.randn(
+                latent_inf = torch.randn( # Use seed to denoise always the same images
                     config['logging']['images']['batch_size'], config['model']['in_channels'],
-                    config['processing']['resolution'], config['processing']['resolution'], device=accelerator.device
-                )
+                    config['processing']['resolution'], config['processing']['resolution'],
+                    generator=torch.manual_seed(4)
+                ).to(accelerator.device)
                 latent_inf *= noise_scheduler.init_noise_sigma # init noise is 1.0 in vanilla case
                 # denoise images
                 for t in tqdm(noise_scheduler.timesteps): # markov chain
@@ -262,14 +265,17 @@ def main():
                             {f"latent_{i}": [wandb.Image(latent_inf[b,i], mode='F') for b in range(config['logging']['images']['batch_size'])]},
                             step=global_step,
                         )
-                # save model
+                del latent_inf # delete the latent_inf variable
+            # save model
             if epoch % config['saving']['local']['saving_frequency'] == 0 or epoch == num_epochs - 1: # if in model saving epoch or last one
-                # unwrape the model
-                model = accelerator.unwrap_model(model, keep_fp32_wrapper=True)
-                # create pipeline
-                pipeline = DDPMPipeline(unet=model, scheduler=noise_scheduler)
+                # create pipeline # unwrape the model
+                saving_model = accelerator.unwrap_model(model)
+                pipeline = DDPMPipeline(unet=saving_model, scheduler=noise_scheduler)
                 pipeline.save_pretrained(str(pipeline_dir))
                 logger.info(f"Saving model to {pipeline_dir}")
+                # delete saving model and pipeline
+                del saving_model
+                del pipeline
 
     logger.info("Finished training!\n")
     # stop tracking

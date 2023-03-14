@@ -21,9 +21,16 @@ def main():
     paths = metadata['path'].values # get paths
     save_dir = repo_path / 'data/images/breast40k'
     save_dir.mkdir(parents=False, exist_ok=True) # create the save directory if needed
-    for i in tqdm(range(len(paths))):
+    not_existant = 0 # not existant files
+    start = 7790 # start from this index
+    for i in tqdm(range(start, len(paths))):
         path = paths[i]
         # load the dicom image
+        # only attempt to read if the file exists
+        if not os.path.exists(path):
+            not_existant += 1
+            print(f'File {path} does not exist')
+            continue
         ds = pydicom.dcmread(path)
         # apply the voi lut and convert to uint16
         image_array = apply_voi_lut(ds.pixel_array, ds)
@@ -36,5 +43,6 @@ def main():
         # save the image
         cv.imwrite(str(save_dir / f'{image_id}.png'), image_array)
 
+    print(f'Not existant files: {not_existant}')
 if __name__ == '__main__':
     main()

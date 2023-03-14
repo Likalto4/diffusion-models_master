@@ -27,24 +27,24 @@ model:
   down_block_types: !!python/tuple # Describes the type of block to use for downsampling
   - "DownBlock2D"  # a regular ResNet downsampling block
   - "DownBlock2D"
-  - "DownBlock2D"  # a ResNet downsampling block with spatial self-attention
+  - "AttnDownBlock2D"  # a ResNet downsampling block with spatial self-attention
   - "AttnDownBlock2D" # originaly a attention block, changed to a regular block
   up_block_types: !!python/tuple # Describes the type of block to use for upsampling
   - "AttnUpBlock2D"
-  - "UpBlock2D"  # a ResNet upsampling block with spatial self-attention
+  - "AttnUpBlock2D"  # a ResNet upsampling block with spatial self-attention
   - "UpBlock2D"
   - "UpBlock2D"  # a regular ResNet upsampling block
 
 # 3. Training
 training:
-  num_epochs: 100 # Number of epochs to train for
+  num_epochs: 50 # Number of epochs to train for
   gradient_accumulation:
     steps: 8 # Number of gradient accumulation steps
   mixed_precision:
-    type: 'no' # Type of mixed precision to use
+    type: 'fp16' # Type of mixed precision to use
   gradient_clip:
     max_norm: 1.0 # Maximum norm for gradient clipping
-  enable_xformers_memory_efficient_attention: False
+  enable_xformers_memory_efficient_attention: True
   optimizer:
     learning_rate: 1.0e-4 # Learning rate for the optimizer
     beta_1: 0.95 # Beta 1 for the AdamW optimizer
@@ -53,7 +53,7 @@ training:
     eps: 1.0e-8
   lr_scheduler:
     name: "cosine"
-    num_warmup_steps: 1000
+    num_warmup_steps: 500
   noise_scheduler:
     num_train_timesteps: 1000
     beta_schedule: "linear" # originally using "squaredcos_cap_v2", 
@@ -64,7 +64,7 @@ training:
 saving:
   local:
     outputs_dir: 'results/pipelines' # Parent directory for saving outputs
-    pipeline_name: 'latentstar_32_ga-8_eps-50_ws-1000' # Name of the pipeline
+    pipeline_name: 'star2latent_32_ga-8' # Name of the pipeline
     checkpoint_frequency: 10000 # How often to save checkpoints (in steps)
     saving_frequency: 10 # How often to save the model (in epochs)
   hf:
@@ -73,6 +73,7 @@ saving:
 logging:
   logger_name: 'wandb' # Name of the logger
   dir_name: 'logs' # Name of the logging directory
+  # run_name: '40k' # Name of the run
   images:
     freq_epochs: 5 # How often to save images (in epochs)
     batch_size: 4 # Batch size for image generation
