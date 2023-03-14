@@ -67,14 +67,14 @@ training:
 saving:
   local:
     outputs_dir: 'results/pipelines' # Parent directory for saving outputs
-    pipeline_name: 'trials_nomeaning' # Name of the pipeline
-    checkpoint_frequency: 10000 # How often to save checkpoints (in steps)
+    pipeline_name: 'unconditional_64' # Name of the pipeline
+    checkpoint_frequency: 3500 # How often to save checkpoints (in steps)
     saving_frequency: 10 # How often to save the model (in epochs)
   hf:
-    repo_name: 'Breast_unconditional_64_100' # Name of the HF repo
+    repo_name: 'Breast_unconditional_64' # Name of the HF repo
     # model_card_path: 'experiments/model_card.yaml' # Path to model card
 logging:
-  logger_name: 'wandb' # Name of the logger
+  logger_name: 'tensorboard' # Name of the logger
   dir_name: 'logs' # Name of the logging directory
   images:
     freq_epochs: 10 # How often to save images (in epochs)
