@@ -265,17 +265,13 @@ def main():
                             {f"latent_{i}": [wandb.Image(latent_inf[b,i], mode='F') for b in range(config['logging']['images']['batch_size'])]},
                             step=global_step,
                         )
-                del latent_inf # delete the latent_inf variable
             # save model
             if epoch % config['saving']['local']['saving_frequency'] == 0 or epoch == num_epochs - 1: # if in model saving epoch or last one
                 # create pipeline # unwrape the model
-                saving_model = accelerator.unwrap_model(model)
-                pipeline = DDPMPipeline(unet=saving_model, scheduler=noise_scheduler)
+                # saving_model = accelerator.unwrap_model(model)
+                pipeline = DDPMPipeline(unet=model, scheduler=noise_scheduler)
                 pipeline.save_pretrained(str(pipeline_dir))
                 logger.info(f"Saving model to {pipeline_dir}")
-                # delete saving model and pipeline
-                del saving_model
-                del pipeline
 
     logger.info("Finished training!\n")
     # stop tracking
