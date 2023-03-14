@@ -149,7 +149,7 @@ def main():
     if accelerator.is_main_process:
         run = os.path.split(__file__)[-1].split(".")[0] # get the name of the script
         accelerator.init_trackers(project_name=run) # intialize a run for all trackers
-        accelerator.get_tracker('wandb').save(str(config_path)) if config['logging']['logger_name'] == 'wandb' else None # save the config file in the wandb run
+        wandb.save(str(config_path)) if config['logging']['logger_name'] == 'wandb' else None # save the config file in the wandb run
     # global trackers
     total_batch_size = config['processing']['batch_size'] * accelerator.num_processes * config['training']['gradient_accumulation']['steps'] # considering accumulated and distributed training
     num_update_steps_per_epoch = math.ceil(len(train_dataloader) / config['training']['gradient_accumulation']['steps']) # take into account the gradient accumulation (divide)
