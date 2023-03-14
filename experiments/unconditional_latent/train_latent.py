@@ -5,9 +5,9 @@ repo_path= Path.cwd().resolve()
 while '.gitignore' not in os.listdir(repo_path): # while not in the root of the repo
     repo_path = repo_path.parent #go up one level
 sys.path.insert(0,str(repo_path)) if str(repo_path) not in sys.path else None
+exp_path = Path.cwd().resolve() # path to the experiment folder
 
 from datasets_local.datasets import load_breast_dataset
-
 #Libraries
 import yaml
 import math
@@ -40,13 +40,11 @@ check_min_version("0.15.0.dev0")
 logger = get_logger(__name__, log_level="INFO") # allow from info level and above
 
 def main():
-    ### 0. General setups
+    ### 0. Initial setups
     # load the config file
-    exp_path = Path.cwd().resolve()
     config_path = exp_path / 'config_files/latent_32.yaml' # configuration file path (beter to call it from the args parser)
     with open(config_path) as file: # expects the config file to be in the same directory
         config = yaml.load(file, Loader=yaml.FullLoader)
-
     # define logging directory
     pipeline_dir = repo_path / config['saving']['local']['outputs_dir'] / config['saving']['local']['pipeline_name']
     logging_dir = pipeline_dir / config['logging']['dir_name']
@@ -58,7 +56,6 @@ def main():
         log_with= config['logging']['logger_name'],
         logging_dir= logging_dir,
     )
-
     # define basic logging configuration
     logging.basicConfig(
         format="%(asctime)s - %(levelname)s - %(name)s -   %(message)s", # format of the log message. # name is the logger name.
@@ -94,8 +91,7 @@ def main():
         down_block_types= config['model']['down_block_types'],
         up_block_types=config['model']['up_block_types'],
     )
-
-    # enable memory efficient attention
+    # memory efficient attention for model
     if config['training']['enable_xformers_memory_efficient_attention']:
         if is_xformers_available():
             import xformers
@@ -108,13 +104,9 @@ def main():
             model.enable_xformers_memory_efficient_attention()
         else:
             raise ValueError("xformers is not available. Make sure it is installed correctly")
-    # # enables auto 
-    # torch.backends.cudnn.benchmark = True
 
     ### 3. Training
-    # Number of epochs
     num_epochs = config['training']['num_epochs']
-    # AdamW optimizer
     optimizer = torch.optim.AdamW(
         model.parameters(),
         lr= config['training']['optimizer']['learning_rate'], # learning rate of the optimizer
@@ -122,14 +114,12 @@ def main():
         weight_decay= config['training']['optimizer']['weight_decay'], # weight decay according to the AdamW paper
         eps= config['training']['optimizer']['eps'] # epsilon according to the AdamW paper
     )
-    # learning rate scheduler
     lr_scheduler = get_scheduler(
         name= config['training']['lr_scheduler']['name'], # name of the scheduler
         optimizer= optimizer, # optimizer to use
         num_warmup_steps= config['training']['lr_scheduler']['num_warmup_steps'] * config['training']['gradient_accumulation']['steps'],
         num_training_steps= (len(train_dataloader) * num_epochs), #* config['training']['gradient_accumulation']['steps']? # no because this changes every step
     )
-    # Noise scheduler
     noise_scheduler = DDPMScheduler(
         beta_start=config['training']['noise_scheduler']['beta_start'],
         beta_end=config['training']['noise_scheduler']['beta_end'],
@@ -142,7 +132,7 @@ def main():
         model, optimizer, train_dataloader, lr_scheduler
     )
 
-    # trackers
+    # init tracker (wand or TB) and save config file
     if accelerator.is_main_process:
         run = os.path.split(__file__)[-1].split(".")[0] # get the name of the script
         accelerator.init_trackers(project_name=run) # intialize a run for all trackers
@@ -159,7 +149,6 @@ def main():
     logger.info(f'The number of batches is: {len(train_dataloader)}\n')
     logger.info(f'The batch size is: {config["processing"]["batch_size"]}\n')
     logger.info(f'The number of update steps per epoch is: {num_update_steps_per_epoch}\n')
-
     logger.info(f'The gradient accumulation steps is: {config["training"]["gradient_accumulation"]["steps"]}\n')
     logger.info(f'The total batch size (accumulated, multiprocess) is: {total_batch_size}\n')
     logger.info(f'Total optimization steps: {max_train_steps}\n')
@@ -168,21 +157,16 @@ def main():
     global_step = 0
 
     #### Training loop
-    # Loop over the epochs
-    for epoch in range(num_epochs):
+    for epoch in range(num_epochs): # Loop over the epochs
         #set the model to training mode explicitly
         model.train()
-        train_loss = []
-        # Create a progress bar
+        train_loss = [] # accumulated loss list
         pbar = tqdm(total=num_update_steps_per_epoch)
         pbar.set_description(f"Epoch {epoch}")
-        # Loop over the batches
-        for latents in train_dataloader:
+        for latents in train_dataloader: # Loop over the batches
             with accelerator.accumulate(model): # start gradient accumulation
-                # Sample noise to add to the images and also send it to device(2nd thing in device)
-                noise = torch.randn_like(latents)
-                # batch size variable for later use
-                bs = latents.shape[0]
+                noise = torch.randn_like(latents) # Sample noise to add to the images
+                bs = latents.shape[0] # batch size variable for later use
                 # Sample a random timestep for each image
                 timesteps = torch.randint( #create bs random integers from init=0 to end=timesteps, and send them to device (3rd thing in device)
                     low= 0,
@@ -192,7 +176,6 @@ def main():
                 ).long() #int64
                 # Forward diffusion process: add noise to the clean images according to the noise magnitude at each timestep
                 noisy_images = noise_scheduler.add_noise(latents, noise, timesteps)
-                
                 # Get the model prediction, #### This part changes according to the prediction type (e.g. epsilon, sample, etc.)
                 noise_pred = model(noisy_images, timesteps).sample # sample tensor
                 # Calculate the loss
@@ -267,12 +250,10 @@ def main():
                         )
             # save model
             if epoch % config['saving']['local']['saving_frequency'] == 0 or epoch == num_epochs - 1: # if in model saving epoch or last one
-                # create pipeline # unwrape the model
-                # saving_model = accelerator.unwrap_model(model)
-                pipeline = DDPMPipeline(unet=model, scheduler=noise_scheduler)
+                # create pipeline # unwrap the model
+                pipeline = DDPMPipeline(unet=accelerator.unwrap_model(model), scheduler=noise_scheduler)
                 pipeline.save_pretrained(str(pipeline_dir))
                 logger.info(f"Saving model to {pipeline_dir}")
-
     logger.info("Finished training!\n")
     # stop tracking
     accelerator.end_training()
