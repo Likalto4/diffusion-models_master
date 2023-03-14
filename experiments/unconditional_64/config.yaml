@@ -74,7 +74,7 @@ saving:
     repo_name: 'Breast_unconditional_64_100' # Name of the HF repo
     # model_card_path: 'experiments/model_card.yaml' # Path to model card
 logging:
-  logger_name: 'tensorboard' # Name of the logger
+  logger_name: 'wandb' # Name of the logger
   dir_name: 'logs' # Name of the logging directory
   images:
     freq_epochs: 10 # How often to save images (in epochs)

@@ -5,10 +5,12 @@ repo_path= Path.cwd().resolve()
 while '.gitignore' not in os.listdir(repo_path): # while not in the root of the repo
     repo_path = repo_path.parent #go up one level
 sys.path.insert(0,str(repo_path)) if str(repo_path) not in sys.path else None
+exp_path = Path.cwd().resolve() # path to the experiment folder
 
 #Libraries
 import yaml
 import math
+import numpy as np
 import torch
 import torch.nn.functional as F
 from tqdm import tqdm
@@ -16,14 +18,13 @@ from torchvision.transforms import (
     Compose,
     Resize,
     CenterCrop,
-    RandomHorizontalFlip,
     ToTensor,
     Normalize,
     InterpolationMode,
 )
 import wandb
 import datasets, diffusers
-# from datasets import load_dataset
+from datasets_local.datasets import load_breast_dataset
 from diffusers import (
     UNet2DModel,
     DDPMScheduler,
@@ -36,93 +37,17 @@ import logging
 from accelerate.logging import get_logger
 from accelerate import Accelerator
 
-# extra
-import pandas as pd
-from PIL import Image
-import csv
-
 # Check the diffusers version
-check_min_version("0.13.0.dev0")
+check_min_version("0.15.0.dev0")
 
 # set the logger
 logger = get_logger(__name__, log_level="INFO") # allow from info level and above
 
-# create a dataset class for our breast images
-class breast_dataset(torch.utils.data.Dataset):
-    def __init__(self, csv_path: Path, images_dir: Path, transform=None):
-        """_summary_
-
-        Args:
-            csv_path (Path): path to the csv file with the filenames
-            images_dir (Path): path to the folder with the images
-            transform (function, optional): transformation function. Usually pytorch.Transform. Defaults to None.
-        """
-        self.names = pd.read_csv(csv_path, header=None) # read csv file
-        self.images_dir = images_dir # path to image folder
-        self.transform = transform # transform to apply to images
-    
-    def __len__(self):
-        """returns the length of the dataset
-
-        Returns:
-            int: length of the dataset
-        """
-        return len(self.names)
-    
-    def __getitem__(self, idx: int):
-        """returns the image at index idx
-
-        Args:
-            idx (int): index in the csv file
-
-        Returns:
-            PIL.Image: PIL image
-        """
-        img_path = self.images_dir / self.names.iloc[idx, 0] # get image path
-        image = Image.open(img_path) # open image
-        # image = np.array(image, dtype=np.float32) # convert to numpy array
-        if self.transform: # apply transform if it exists
-            image = self.transform(image)
-            
-        return image
-    
-    def set_transform(self, transform):
-        """set the transform to apply to the images
-
-        Args:
-            transform (function): transform to apply to the images
-        """
-        self.transform = transform
-
-    def __repr__(self) -> str:
-        return f"({len(self)} images)"
-
-def load_breast_dataset(folder_dir:Path):
-    # get directory name
-    folder_name = folder_dir.name
-    # check if the csv file with the filenames already exists
-    csv_path = folder_dir.parent.parent / 'filenames' / f'{folder_name}.csv'
-    if not csv_path.exists(): # if not, create it
-        with open(csv_path, mode='w', newline='') as file:
-            writer = csv.writer(file)
-            for filename in os.listdir(folder_dir):
-                if filename.endswith(".png"):
-                    writer.writerow([filename])
-    # now we can create the dataset
-    dataset = breast_dataset(csv_path, images_dir= folder_dir)
-    
-    return dataset    
-
-
 ######MAIN######
 def main():
     ### 0. General setups
-    # device selection (may be blocked by the accelerator)
-    selected_gpu = 0 #select the GPU to use
-    device = torch.device("cuda:" + str(selected_gpu) if torch.cuda.is_available() else "cpu")
-    print(f'The device is: {device}\n')
-
     # load the config file
+    config_path = exp_path / 'config.yaml'
     with open('config.yaml') as file: # expects the config file to be in the same directory
         config = yaml.load(file, Loader=yaml.FullLoader)
 
@@ -197,9 +122,7 @@ def main():
     )
 
     ### 3. Training
-    # Number of epochs
     num_epochs = config['training']['num_epochs']
-    # AdamW optimizer
     optimizer = torch.optim.AdamW(
         model.parameters(),
         lr= config['training']['optimizer']['learning_rate'], # learning rate of the optimizer
@@ -207,14 +130,12 @@ def main():
         weight_decay= config['training']['optimizer']['weight_decay'], # weight decay according to the AdamW paper
         eps= config['training']['optimizer']['eps'] # epsilon according to the AdamW paper
     )
-    # learning rate scheduler
     lr_scheduler = get_scheduler(
         name= config['training']['lr_scheduler']['name'], # name of the scheduler
         optimizer= optimizer, # optimizer to use
         num_warmup_steps= config['training']['lr_scheduler']['num_warmup_steps'] * config['training']['gradient_accumulation']['steps'],
         num_training_steps= (len(train_dataloader) * num_epochs), #* config['training']['gradient_accumulation']['steps']?
     )
-    # Noise scheduler
     noise_scheduler = DDPMScheduler(
         num_train_timesteps=config['training']['noise_scheduler']['num_train_timesteps'],
         beta_schedule=config['training']['noise_scheduler']['beta_schedule'],
@@ -224,10 +145,11 @@ def main():
     model, optimizer, train_dataloader, lr_scheduler = accelerator.prepare(
         model, optimizer, train_dataloader, lr_scheduler
     )
-    # trackers
+    # init tracker (wand or TB)
     if accelerator.is_main_process:
         run = os.path.split(__file__)[-1].split(".")[0] # get the name of the script
         accelerator.init_trackers(project_name=run) # intialize a run for all trackers
+        accelerator.get_tracker('wandb').save(str(config_path)) if config['logging']['logger_name'] == 'wandb' else None # save the config file in the wandb run
     # global trackers
     total_batch_size = config['processing']['batch_size'] * accelerator.num_processes * config['training']['gradient_accumulation']['steps'] # considering accumulated and distributed training
     num_update_steps_per_epoch = math.ceil(len(train_dataloader) / config['training']['gradient_accumulation']['steps']) # take into account the gradient accumulation (divide)
@@ -240,79 +162,72 @@ def main():
     logger.info(f'The batch size is: {config["processing"]["batch_size"]}\n')
     logger.info(f'The number of update steps per epoch is: {num_update_steps_per_epoch}\n')
     logger.info(f'The gradient accumulation steps is: {config["training"]["gradient_accumulation"]["steps"]}\n')
+    logger.info(f'The total batch size (accumulated, multiprocess) is: {total_batch_size}\n')
     logger.info(f'Total optimization steps: {max_train_steps}\n')
     
     # global variables (mainly useful for checkpointing)
     global_step = 0
-    first_epoch = 0
 
     #### Training loop
     # Loop over the epochs
     for epoch in range(num_epochs):
-        #set the model to training mode explicitly
         model.train()
-        # Create a progress bar
+        train_loss = [] # accumulated loss list
         pbar = tqdm(total=num_update_steps_per_epoch)
         pbar.set_description(f"Epoch {epoch}")
-        # Loop over the batches
-        for _, batch in enumerate(train_dataloader):
-            # Get the images and send them to device (1st thing in device)
-            # clean_images = batch["images"].to(device)
-            clean_images = batch.to(device)
-            # Sample noise to add to the images and also send it to device(2nd thing in device)
-            noise = torch.randn(clean_images.shape).to(clean_images.device)
-            # batch size variable for later use
-            bs = clean_images.shape[0]
-            # Sample a random timestep for each image
-            timesteps = torch.randint( #create bs random integers from init=0 to end=timesteps, and send them to device (3rd thing in device)
-                low= 0,
-                high= noise_scheduler.num_train_timesteps,
-                size= (bs,),
-                device=clean_images.device ,
-            ).long() #int64
-            
-            # Forward diffusion process: add noise to the clean images according to the noise magnitude at each timestep
-            noisy_images = noise_scheduler.add_noise(clean_images, noise, timesteps)
-            # gradient accumulation starts here
+        for batch in train_dataloader: # Loop over the batches
             with accelerator.accumulate(model):
+                noise = torch.randn_like(batch) # Sample noise to add to the images and also send it to device(2nd thing in device)
+                bs = batch.shape[0]
+                # Sample a random timestep for each image
+                timesteps = torch.randint( #create bs random integers from init=0 to end=timesteps, and send them to device (3rd thing in device)
+                    low= 0,
+                    high= noise_scheduler.num_train_timesteps,
+                    size= (bs,),
+                    device=batch.device ,
+                ).long() #int64
+                # Forward diffusion process: add noise to the clean images according to the noise magnitude at each timestep
+                noisy_images = noise_scheduler.add_noise(batch, noise, timesteps)
                 # Get the model prediction, #### This part changes according to the prediction type (e.g. epsilon, sample, etc.)
                 noise_pred = model(noisy_images, timesteps).sample # sample tensor
                 # Calculate the loss
-                loss = F.mse_loss(noise_pred, noise)
+                loss = F.mse_loss(noise_pred.float(), noise.float())
+                # Gather the losses across all processes for logging (if we use distributed training).
+                avg_loss = accelerator.gather(loss.repeat(config['processing']['batch_size'])).mean()
+                # append the loss to the train loss
+                train_loss.append(avg_loss.item())
+                
                 # Backpropagate the loss
                 accelerator.backward(loss) #loss is used as a gradient, coming from the accumulation of the gradients of the loss function
-                # gradient clipping
-                if accelerator.sync_gradients:
+                if accelerator.sync_gradients: # gradient clipping
                     accelerator.clip_grad_norm_(model.parameters(), config['training']['gradient_clip']['max_norm'])
-                # Update the parameters
+                # Update
                 optimizer.step()
-                # Update the learning rate
                 lr_scheduler.step()
-                # Zero the gradients
                 optimizer.zero_grad()
-            #gradient accumulation ends here
             
             # updates and checkpoint saving happens only if the gradients are synced
             if accelerator.sync_gradients:
                 # Update the progress bar
                 pbar.update(1)
                 global_step += 1
+                # take the mean of the accumulated loss
+                train_loss = np.mean(train_loss)
+                accelerator.log({"loss": train_loss, "log-loss": np.log(train_loss)}, step=global_step) #accumulated loss
+                train_loss = [] # reset the train for next accumulation
                 # Save the checkpoint
                 if global_step % config['saving']['local']['checkpoint_frequency'] == 0: # if saving time
                     if accelerator.is_main_process: # only if in main process
                         save_path = pipeline_dir / f"checkpoint-{global_step}" # create the path
                         accelerator.save_state(save_path) # save the state
                         logger.info(f"Saving checkpoint to {save_path}") # let the user know
-            # logging
-            logs = {"loss": loss.detach().item(), "log-loss": torch.log(loss.detach()).item(), "lr": lr_scheduler.get_last_lr()[0], "step": global_step}
-            # log the metrics
+            # step logging
+            logs = {"step_loss": loss.detach().item(), "lr": lr_scheduler.get_last_lr()[0]}
             accelerator.log(values=logs, step=global_step)
-            # add logs to the end of the progress bar
             pbar.set_postfix(**logs)
         # Close the progress bar at the end of the epoch
         pbar.close()
-        # wait for all processes to finish before saving the model
-        accelerator.wait_for_everyone()
+        accelerator.wait_for_everyone() # wait for all processes to finish before saving the model
 
         ##### 4. Saving the model and visual samples
         # generate visual samples to track training performance and save when in saving epoch
@@ -330,9 +245,6 @@ def main():
                     generator=generator,
                     output_type='numpy' # output as numpy array
                 ).images # get the numpy images
-                # take images back to 255 range
-                # images_denorm = (images*255).astype('uint8')
-                # send images to logger
                 if config['logging']['logger_name'] == 'tensorboard':
                     accelerator.get_tracker('tensorboard').add_images(
                         "test_samples", images.transpose(0, 3, 1, 2), epoch

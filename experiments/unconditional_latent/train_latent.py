@@ -158,7 +158,6 @@ def main():
 
     #### Training loop
     for epoch in range(num_epochs): # Loop over the epochs
-        #set the model to training mode explicitly
         model.train()
         train_loss = [] # accumulated loss list
         pbar = tqdm(total=num_update_steps_per_epoch)
@@ -188,7 +187,6 @@ def main():
                 
                 # Backpropagate the loss
                 accelerator.backward(loss) #loss is used as a gradient, coming from the accumulation of the gradients of the loss function
-                
                 if accelerator.sync_gradients: # gradient clipping
                     accelerator.clip_grad_norm_(model.parameters(), config['training']['gradient_clip']['max_norm'])
                 # Update
