@@ -37,11 +37,11 @@ model:
 
 # 3. Training
 training:
-  num_epochs: 100 # Number of epochs to train for
+  num_epochs: 50 # Number of epochs to train for
   gradient_accumulation:
     steps: 8 # Number of gradient accumulation steps
   mixed_precision:
-    type: 'fp16' # Type of mixed precision to use
+    type: 'no' # Type of mixed precision to use
   gradient_clip:
     max_norm: 1.0 # Maximum norm for gradient clipping
   enable_xformers_memory_efficient_attention: True
@@ -64,7 +64,7 @@ training:
 saving:
   local:
     outputs_dir: 'results/pipelines' # Parent directory for saving outputs
-    pipeline_name: 'star2latent_32_ga-16' # Name of the pipeline
+    pipeline_name: 'star2latent_32_ga-8' # Name of the pipeline
     checkpoint_frequency: 10000 # How often to save checkpoints (in steps)
     saving_frequency: 10 # How often to save the model (in epochs)
   hf:

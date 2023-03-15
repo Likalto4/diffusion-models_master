@@ -117,7 +117,7 @@ def main():
     lr_scheduler = get_scheduler(
         name= config['training']['lr_scheduler']['name'], # name of the scheduler
         optimizer= optimizer, # optimizer to use
-        num_warmup_steps= config['training']['lr_scheduler']['num_warmup_steps'] * config['training']['gradient_accumulation']['steps'],
+        num_warmup_steps= config['training']['lr_scheduler']['num_warmup_steps'], #* config['training']['gradient_accumulation']['steps'],
         num_training_steps= (len(train_dataloader) * num_epochs), #* config['training']['gradient_accumulation']['steps']? # no because this changes every step
     )
     noise_scheduler = DDPMScheduler(
