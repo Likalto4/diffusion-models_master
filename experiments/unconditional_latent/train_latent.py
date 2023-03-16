@@ -107,6 +107,13 @@ def main():
 
     ### 3. Training
     num_epochs = config['training']['num_epochs']
+    
+    # global trackers
+    total_batch_size = config['processing']['batch_size'] * accelerator.num_processes * config['training']['gradient_accumulation']['steps'] # considering accumulated and distributed training
+    num_update_steps_per_epoch = math.ceil(len(train_dataloader) / config['training']['gradient_accumulation']['steps']) # take into account the gradient accumulation (divide)
+    max_train_steps = num_epochs * num_update_steps_per_epoch # total number of training steps
+    
+    
     optimizer = torch.optim.AdamW(
         model.parameters(),
         lr= config['training']['optimizer']['learning_rate'], # learning rate of the optimizer
@@ -118,7 +125,7 @@ def main():
         name= config['training']['lr_scheduler']['name'], # name of the scheduler
         optimizer= optimizer, # optimizer to use
         num_warmup_steps= config['training']['lr_scheduler']['num_warmup_steps'], #* config['training']['gradient_accumulation']['steps'],
-        num_training_steps= (len(train_dataloader) * num_epochs), #* config['training']['gradient_accumulation']['steps']? # no because this changes every step
+        num_training_steps= max_train_steps, 
     )
     noise_scheduler = DDPMScheduler(
         beta_start=config['training']['noise_scheduler']['beta_start'],
@@ -138,10 +145,7 @@ def main():
         accelerator.init_trackers(project_name=run) # intialize a run for all trackers
         wandb.save(str(config_path)) if config['logging']['logger_name'] == 'wandb' else None # save the config file in the wandb run
 
-    # global trackers
-    total_batch_size = config['processing']['batch_size'] * accelerator.num_processes * config['training']['gradient_accumulation']['steps'] # considering accumulated and distributed training
-    num_update_steps_per_epoch = math.ceil(len(train_dataloader) / config['training']['gradient_accumulation']['steps']) # take into account the gradient accumulation (divide)
-    max_train_steps = num_epochs * num_update_steps_per_epoch # total number of training steps
+
 
     logger.info('The training is starting...\n')
     logger.info(f'The number of examples is: {len(dataset)}\n')
@@ -152,6 +156,10 @@ def main():
     logger.info(f'The gradient accumulation steps is: {config["training"]["gradient_accumulation"]["steps"]}\n')
     logger.info(f'The total batch size (accumulated, multiprocess) is: {total_batch_size}\n')
     logger.info(f'Total optimization steps: {max_train_steps}\n')
+
+    # lr scheduler info
+    logger.info(f'The learning rate scheduler is: {config["training"]["lr_scheduler"]["name"]}\n')
+    logger.info(f'The number of warmup steps is: {config["training"]["lr_scheduler"]["num_warmup_steps"]}\n')
 
     # global variables
     global_step = 0
