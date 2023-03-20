@@ -1,6 +1,6 @@
 processing:
   # dataset name
-  dataset: "data/images/breast40k" # name of the dataset to convert to latent space
+  dataset: "data/images/breast10p" # name of the dataset to convert to latent space
   # image size or resolution to resize
   resolution: 512
   # normalisation
