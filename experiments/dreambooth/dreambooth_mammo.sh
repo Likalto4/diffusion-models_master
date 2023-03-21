@@ -36,3 +36,4 @@ accelerate launch dreambooth_mammo.py \
   --checkpointing_steps=200000 \
   --validation_prompt="$INSTANCE_PROMPT" \
   --enable_xformers_memory_efficient_attention \
+  --push_to_hub \
