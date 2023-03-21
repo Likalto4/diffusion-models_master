@@ -31,8 +31,8 @@ accelerate launch dreambooth_mammo.py \
   --dataloader_num_workers=4 \
   --max_train_steps=$MAX_TRAIN_STEPS \
   --num_validation_images=4 \
-  --validation_steps=500 \
+  --validation_steps=50 \
   --report_to="wandb" \
   --checkpointing_steps=200000 \
   --validation_prompt="$INSTANCE_PROMPT" \
-  --enable_xformers_memory_efficient_attention
+  --enable_xformers_memory_efficient_attention \

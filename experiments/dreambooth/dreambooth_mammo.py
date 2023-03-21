@@ -921,7 +921,7 @@ def main(args):
     # The trackers initializes automatically on the main process.
     if accelerator.is_main_process:
         run = os.path.split(__file__)[-1].split(".")[0]
-        accelerator.init_trackers("dreambooth_medical", config=vars(args)) # add args to wandb
+        accelerator.init_trackers(run, config=vars(args)) # add args to wandb
         wandb.save(str(exp_path / f"{run}.sh")) if args.report_to=="wandb" else None
 
     # Train!
