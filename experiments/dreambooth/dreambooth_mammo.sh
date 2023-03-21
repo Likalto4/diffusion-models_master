@@ -1,8 +1,8 @@
 #!/bin/bash
 
 MODEL_NAME="runwayml/stable-diffusion-v1-5"
-OUTPUT_DIR="/home/ricardo/master_thesis/extra_materials/Diffusion_models_HF_course/results/mammo_bs8_ga-8_GS"
-INSTANCE_DATA_DIR="/home/ricardo/master_thesis/extra_materials/Diffusion_models_HF_course/data/breast10p_RGB"
+OUTPUT_DIR="/home/ricardo/master_thesis/diffusion-models_master/results/mammo_bs8_ga-8_GS"
+INSTANCE_DATA_DIR="/home/ricardo/master_thesis/diffusion-models_master/data/images/breast10p_RGB"
 INSTANCE_PROMPT="a mammogram"
 MAX_TRAIN_STEPS=640
 # WANDB_START_METHOD="thread"
