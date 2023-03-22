@@ -1,8 +1,8 @@
 processing:
   # dataset name
-  dataset_path: "data/images/breast10p" # name of the dataset to convert to latent space
+  dataset_path: "data/images/breast40k" # name of the dataset to convert to latent space
   # saving directory name
-  saving_name: "breast10p_RGB"
+  saving_name: "breast40k_RGB"
   # image size or resolution to resize
   resolution: 512
   # normalisation
