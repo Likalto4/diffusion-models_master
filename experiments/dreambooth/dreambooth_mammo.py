@@ -870,6 +870,7 @@ def main(args):
         shuffle=True,
         collate_fn=lambda examples: collate_fn(examples, args.with_prior_preservation),
         num_workers=args.dataloader_num_workers,
+        drop_last=True,
     )
 
     # Scheduler and math around the number of training steps.
