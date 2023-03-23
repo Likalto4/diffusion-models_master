@@ -2,3 +2,5 @@ metadata/
 data/
 results/
 wandb/
+# inference images
+inference_images/

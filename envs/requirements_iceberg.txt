@@ -1,0 +1,6 @@
+opencv-python == 4.5.4.60
+matplotlib
+numpy
+omidb == 0.7.0 
+pydicom == 1.4.1
+SimpleITK
