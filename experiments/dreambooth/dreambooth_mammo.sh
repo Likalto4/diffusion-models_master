@@ -1,20 +1,21 @@
 #!/bin/bash
 
 MODEL_NAME="runwayml/stable-diffusion-v1-5"
-OUTPUT_DIR="/home/ricardo/master_thesis/diffusion-models_master/results/mammo40k_abs-256"
-INSTANCE_DATA_DIR="/home/ricardo/master_thesis/diffusion-models_master/data/images/breast40k_RGB"
-INSTANCE_PROMPT="a mammogram"
+OUTPUT_DIR="/home/ricardo/master_thesis/diffusion-models_master/results/mammo_abs-64_promt-short"
+INSTANCE_DATA_DIR="/home/ricardo/master_thesis/diffusion-models_master/data/images/breast10p_RGB"
+INSTANCE_PROMPT="mammogram"
 # HP
-MAX_TRAIN_STEPS=1000
-BATCH_SIZE=16
-GRAD_ACC=16
-VALIDATION_STEPS=100
-NUM_WORKERS=8
+MAX_TRAIN_STEPS=2500
+BATCH_SIZE=1
+GRAD_ACC=8
+VALIDATION_STEPS=500
+NUM_WORKERS=4
+LR=1e-6
 
-# WANDB_START_METHOD="thread"
+WANDB_START_METHOD="thread"
 WANDB_DISABLE_SERVICE=true
-# WANDB_CONSOLE="off"
-# --gradient_checkpointing \ 
+WANDB_CONSOLE="off"
+# 
 # --pretrained_vae_name_or_path="stabilityai/sd-vae-ft-mse" \ # Face VAE
 
 accelerate launch dreambooth_mammo.py \
@@ -31,7 +32,7 @@ accelerate launch dreambooth_mammo.py \
   --use_8bit_adam \
   --set_grads_to_none \
   --gradient_accumulation_steps=$GRAD_ACC \
-  --learning_rate=1e-6 \
+  --learning_rate=$LR \
   --lr_scheduler="constant" \
   --lr_warmup_steps=0 \
   --dataloader_num_workers=$NUM_WORKERS \
@@ -43,3 +44,4 @@ accelerate launch dreambooth_mammo.py \
   --validation_prompt="$INSTANCE_PROMPT" \
   --enable_xformers_memory_efficient_attention \
   --push_to_hub \
+  --gradient_checkpointing \

@@ -395,7 +395,7 @@ def main():
     # Load scheduler, tokenizer and models.
     noise_scheduler = DDPMScheduler.from_pretrained(args.pretrained_model_name_or_path, subfolder="scheduler")
     tokenizer = CLIPTokenizer.from_pretrained(
-        args.pretrained_model_name_or_path, subfolder="tokenizer", revision=args.revision
+        args.pretrained_model_name_or_Dpath, subfolder="tokenizer", revision=args.revision
     )
     text_encoder = CLIPTextModel.from_pretrained(
         args.pretrained_model_name_or_path, subfolder="text_encoder", revision=args.revision
@@ -501,22 +501,22 @@ def main():
     # or specify a Dataset from the hub (the dataset will be downloaded automatically from the datasets Hub).
 
     # In distributed training, the load_dataset function guarantees that only one local process can concurrently
-    # download the dataset.
-    if args.dataset_name is not None:
+    # define dataset dictionary
+    if args.dataset_name is not None: # if the name of the dataset is given (from the hub)
         # Downloading and loading a dataset from the hub.
         dataset = load_dataset(
             args.dataset_name,
             args.dataset_config_name,
             cache_dir=args.cache_dir,
         )
-    else:
-        data_files = {}
-        if args.train_data_dir is not None:
+    else: # if a local dataset is used
+        data_files = {} # dictionary of data files
+        if args.train_data_dir is not None: # if the training data directory is given
             data_files["train"] = os.path.join(args.train_data_dir, "**")
         dataset = load_dataset(
             "imagefolder",
             data_files=data_files,
-            cache_dir=args.cache_dir,
+            cache_dir=args.cache_dir, # wanna change the cache directory?
         )
         # See more about loading custom images at
         # https://huggingface.co/docs/datasets/v2.4.0/en/image_load#imagefolder
@@ -527,6 +527,7 @@ def main():
 
     # 6. Get the column names for input/target.
     dataset_columns = dataset_name_mapping.get(args.dataset_name, None)
+    # check if the image and caption columns are given, else give them in order from the column names directly from the dataset
     if args.image_column is None:
         image_column = dataset_columns[0] if dataset_columns is not None else column_names[0]
     else:

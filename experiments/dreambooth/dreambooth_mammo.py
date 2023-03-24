@@ -855,7 +855,7 @@ def main(args):
     # Dataset and DataLoaders creation:
     train_dataset = DreamBoothDataset(
         instance_data_root=args.instance_data_dir, # folder with images
-        instance_prompt=args.instance_prompt, # promt for images
+        instance_prompt=args.instance_prompt, # prompt for images
         class_data_root=args.class_data_dir if args.with_prior_preservation else None, # prior images
         class_prompt=args.class_prompt, # class (prior) promt
         class_num=args.num_class_images,
