@@ -291,7 +291,6 @@ def main():
     logging_dir = Path(args.output_dir, args.logging_dir) # path for logging
 
     accelerator_project_config = ProjectConfiguration(total_limit=args.checkpoints_total_limit)
-
     accelerator = Accelerator( # start accelerator
         gradient_accumulation_steps=args.gradient_accumulation_steps,
         mixed_precision=args.mixed_precision, 
