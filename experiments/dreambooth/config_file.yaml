@@ -2,7 +2,7 @@
 pretrained_model_name_or_path: runwayml/stable-diffusion-v1-5 #Mandatory, str
 pretrained_vae_name_or_path: null # str
 # version of the model to use
-revision: null # str
+revision: fp16 # str
 # Pretrained tokenizer name or path if not the same as model_name
 tokenizer_name: null # str
 # data:
@@ -55,8 +55,8 @@ adam_weight_decay: 1.0e-2
 adam_epsilon: 1.0e-8
 max_grad_norm: 1.0 # gradient clipping
 # memory:
-allow_tf32: false # on Ampere GPU only
-mixed_precision: no # fp16 or bf16
+allow_tf32: true # on Ampere GPU only
+mixed_precision: 'fp16' # fp16 or bf16
 prior_generation_precision: null # fp16, bf16, or fp32
 enable_xformers_memory_efficient_attention: true
 set_grads_to_none: true

@@ -1,15 +1,15 @@
 #!/bin/bash
 
 MODEL_NAME="runwayml/stable-diffusion-v1-5"
-OUTPUT_DIR="/home/ricardo/master_thesis/diffusion-models_master/results/mammo_abs-64_promt-short"
+OUTPUT_DIR="/home/ricardo/master_thesis/diffusion-models_master/results/mammo_test"
 INSTANCE_DATA_DIR="/home/ricardo/master_thesis/diffusion-models_master/data/images/breast10p_RGB"
-INSTANCE_PROMPT="mammogram"
+INSTANCE_PROMPT="a mammogram"
 # HP
 MAX_TRAIN_STEPS=2500
-BATCH_SIZE=1
-GRAD_ACC=8
+BATCH_SIZE=8
+GRAD_ACC=1
 VALIDATION_STEPS=500
-NUM_WORKERS=4
+NUM_WORKERS=8
 LR=1e-6
 
 WANDB_START_METHOD="thread"
