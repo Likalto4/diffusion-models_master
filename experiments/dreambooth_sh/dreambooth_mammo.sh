@@ -18,7 +18,7 @@ WANDB_CONSOLE="off"
 # 
 # --pretrained_vae_name_or_path="stabilityai/sd-vae-ft-mse" \ # Face VAE
 
-accelerate launch dreambooth_mammo.py \
+accelerate launch dreambooth_mammo_args.py \
   --pretrained_model_name_or_path=$MODEL_NAME \
   --instance_data_dir=$INSTANCE_DATA_DIR \
   --output_dir=$OUTPUT_DIR \
