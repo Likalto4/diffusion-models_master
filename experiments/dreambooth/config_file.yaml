@@ -8,7 +8,7 @@ tokenizer_name: null # str
 # data:
 instance_data_dir: /home/ricardo/master_thesis/diffusion-models_master/data/images/breast10p_RGB # Mandatory, str
 class_data_dir: null # Class images folder for prior preservation
-instance_prompt: mammogram # Mandatory, str
+instance_prompt: &a mammogram # Mandatory, str
 class_prompt: null # Class prompt for prior preservation
 output_dir: /home/ricardo/master_thesis/diffusion-models_master/results/mammo_abs-64_lr-dream # Mandatory, str
 # hub:
@@ -18,7 +18,7 @@ hub_model_id: null # name of the model on the hub (output dir instead)
 # logging:
 logging_dir: logs # log diredctory
 report_to: wandb
-validation_prompt: "${instance_prompt}" # validation prompt for logging
+validation_prompt: *a # validation prompt for logging
 num_validation_images: 4
 validation_steps: 500 # how often to log validation images
 # prior_preservation:
