@@ -49,6 +49,7 @@ lr_power: 1.0 #Power of the polynomial scheduler
 # optimizer
 use_8bit_adam: true
 dataloader_num_workers: 8
+drop_last: false
 adam_beta1: 0.9
 adam_beta2: 0.999
 adam_weight_decay: 1.0e-2
