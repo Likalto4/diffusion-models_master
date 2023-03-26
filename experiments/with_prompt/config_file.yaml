@@ -10,7 +10,7 @@ instance_data_dir: /home/ricardo/master_thesis/diffusion-models_master/data/imag
 class_data_dir: null # Class images folder for prior preservation
 # instance_prompt: &a a mammogram # Mandatory, str
 class_prompt: null # Class prompt for prior preservation
-output_dir: /home/ricardo/master_thesis/diffusion-models_master/results/mammo_vanilla-prompt # Mandatory, str
+output_dir: /home/ricardo/master_thesis/diffusion-models_master/results/mammo_vanilla-prompt_long # Mandatory, str
 # hub:
 push_to_hub: true
 hub_token: null
@@ -26,6 +26,7 @@ with_prior_preservation: false
 prior_loss_weight: 1.0 # prior preservation loss weight
 num_class_images: 100
 sample_batch_size: 4
+prior_generation_precision: null # fp16, bf16, or fp32
 # checkpointing:
 checkpointing_steps: 50000 # save state every checkpointing_steps
 checkpoints_total_limit: null # limit of total checkpoints to save
@@ -37,7 +38,7 @@ center_crop: false # center or random crop
 train_text_encoder: true # train the text encoder
 train_batch_size: 8 # per device
 num_train_epochs: 1
-max_train_steps: 2500 # can override num_train_epochs
+max_train_steps: 5000 # can override num_train_epochs
 gradient_accumulation_steps: 1
 gradient_checkpointing: true
 learning_rate: 1.0e-6 # lr after (potential) warmup
@@ -58,7 +59,6 @@ max_grad_norm: 1.0 # gradient clipping
 # memory:
 allow_tf32: true # on Ampere GPU only
 mixed_precision: 'fp16' # fp16 or bf16
-prior_generation_precision: null # fp16, bf16, or fp32
 enable_xformers_memory_efficient_attention: true
 set_grads_to_none: true
 local_rank: -1 # local rank for distributed training
