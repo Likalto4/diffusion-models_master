@@ -10,7 +10,7 @@ instance_data_dir: /home/ricardo/master_thesis/diffusion-models_master/data/imag
 class_data_dir: null # Class images folder for prior preservation
 instance_prompt: &a a mammogram # Mandatory, str
 class_prompt: null # Class prompt for prior preservation
-output_dir: /home/ricardo/master_thesis/diffusion-models_master/results/mammo_abs-64_lr-dream # Mandatory, str
+output_dir: /home/ricardo/master_thesis/diffusion-models_master/results/test # Mandatory, str
 # hub:
 push_to_hub: false
 hub_token: null
