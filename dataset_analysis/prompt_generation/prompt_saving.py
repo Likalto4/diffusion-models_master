@@ -11,7 +11,7 @@ import pandas as pd
 
 
 # create subset csv
-folder_name = 'breast40k_RGB'
+folder_name = 'breast10p_RGB'
 reference_file = 'metadata_Hologic.csv'
 
 files_folder = repo_path / 'data/images' / f'{folder_name}'
@@ -20,16 +20,21 @@ metadata_path = subset_csv(files_folder, reference_folder) # get metadata csv of
 
 # read csv file
 metadata = pd.read_csv(metadata_path, header=0)
+# combine area pd into the metadata pd
+area_pd = pd.read_csv(reference_folder.parent / f'area_{folder_name}.csv', header=0)
+metadata = metadata.merge(area_pd, on='image_id')
+
+
 # get df with name id and text info of interest
-metadata = metadata[['image_id', 'view_position']]
+metadata = metadata[['image_id', 'view_position', 'size']]
 # add exension to the end of the image_id
 metadata['image_id'] = metadata['image_id'].astype(str) + '.png'
 # change image_id to file_name
 metadata = metadata.rename(columns={'image_id': 'file_name'})
 # prompt column must contain 'mammogram' plus the view position
-metadata['prompt'] = 'mammogram, ' + metadata['view_position'] + ' view'
-# remove view_position column
-metadata = metadata.drop(columns=['view_position'])
+metadata['prompt'] = 'mammogram, ' + metadata['view_position'] + ' view, ' + metadata['size'] + ' size'
+# drop all columns that are not prompt or image_id
+metadata = metadata.drop(columns=['view_position', 'size'])
 # transform to json
 metadata = metadata.to_json(orient='records', lines=True)
 # use same folder as files folder

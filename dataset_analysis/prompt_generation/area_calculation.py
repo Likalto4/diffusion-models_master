@@ -20,7 +20,7 @@ filenames_csv = repo_path / f'data/filenames/{folder_name}.csv'
 filenames_pd = pd.read_csv(filenames_csv, header=None)[0].values
 
 #create pandas for the results
-results_pd = pd.DataFrame(columns=['id', 'breast_percentage'])
+results_pd = pd.DataFrame(columns=['image_id', 'breast_percentage'])
 for im_num in tqdm(range(len(filenames_pd)), desc='images'):
     im_id = filenames_pd[im_num] # image id
     im_path = repo_path / f'data/images/{folder_name}' / f'{im_id}'
@@ -43,10 +43,12 @@ for im_num in tqdm(range(len(filenames_pd)), desc='images'):
     breast_percentage = breast_area / total_area
     
     # add to results using concat
-    results_pd = pd.concat([results_pd, pd.DataFrame([[im_id, breast_percentage]], columns=['id', 'breast_percentage'])], ignore_index=True)
+    results_pd = pd.concat([results_pd, pd.DataFrame([[im_id, breast_percentage]], columns=['image_id', 'breast_percentage'])], ignore_index=True)
 
 # add new column with small if area<0.5 and big if bigger than 0.5
 results_pd['size'] = results_pd['breast_percentage'].apply(lambda x: 'small' if x<0.5 else 'big')
+# remove png extension from image_id string replacing it
+results_pd['image_id'] = results_pd['image_id'].apply(lambda x: x.replace('.png', ''))
 # save results
 csv_path = filenames_csv.parent.parent / 'metadata' / f'area_{folder_name}.csv'
 results_pd.to_csv(csv_path, index=False)
