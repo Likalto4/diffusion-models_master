@@ -10,7 +10,7 @@ instance_data_dir: /home/ricardo/master_thesis/diffusion-models_master/data/imag
 class_data_dir: null # Class images folder for prior preservation
 # instance_prompt: &a a mammogram # Mandatory, str
 class_prompt: null # Class prompt for prior preservation
-output_dir: /home/ricardo/master_thesis/diffusion-models_master/results/mammo40k_vanilla-prompt # Mandatory, str
+output_dir: /home/ricardo/master_thesis/diffusion-models_master/results/mammo40k_size-prompt_5k # Mandatory, str
 # hub:
 push_to_hub: true
 hub_token: null
@@ -18,7 +18,7 @@ hub_model_id: null # name of the model on the hub (output dir instead)
 # logging:
 logging_dir: logs # log diredctory
 report_to: wandb
-validation_prompt: mammogram, MLO view # validation prompt for logging
+validation_prompt: mammogram, MLO view, small size # validation prompt for logging
 num_validation_images: 4
 validation_steps: 100 # how often to log validation images
 # prior_preservation:
@@ -39,7 +39,7 @@ train_text_encoder: true # train the text encoder
 train_batch_size: 16 # per device
 gradient_accumulation_steps: 16
 num_train_epochs: 1
-max_train_steps: 1000 # overrides num_train_epochs
+max_train_steps: 5000 # overrides num_train_epochs
 learning_rate: 1.0e-6 # lr after (potential) warmup
 scale_lr: False #Scale the learning rate by the number of GPUs, gradient accumulation steps, and batch size
 lr_scheduler: constant

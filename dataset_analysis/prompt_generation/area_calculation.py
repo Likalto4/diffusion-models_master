@@ -13,7 +13,7 @@ import cv2 as cv
 from tqdm import tqdm
 
 # HP
-folder_name = 'breast10p_RGB'
+folder_name = 'breast40k_RGB'
 
 # read paths csv
 filenames_csv = repo_path / f'data/filenames/{folder_name}.csv'
@@ -46,7 +46,9 @@ for im_num in tqdm(range(len(filenames_pd)), desc='images'):
     results_pd = pd.concat([results_pd, pd.DataFrame([[im_id, breast_percentage]], columns=['image_id', 'breast_percentage'])], ignore_index=True)
 
 # add new column with small if area<0.5 and big if bigger than 0.5
-results_pd['size'] = results_pd['breast_percentage'].apply(lambda x: 'small' if x<0.5 else 'big')
+# results_pd['size'] = results_pd['breast_percentage'].apply(lambda x: 'small' if x<0.5 else 'big')
+# add new column with small if area<0.3, medium if between 0.3 and 0.7 and big if bigger than 0.7
+results_pd['size'] = results_pd['breast_percentage'].apply(lambda x: 'small' if x<0.4 else 'medium' if x<0.6 else 'big')
 # remove png extension from image_id string replacing it
 results_pd['image_id'] = results_pd['image_id'].apply(lambda x: x.replace('.png', ''))
 # save results

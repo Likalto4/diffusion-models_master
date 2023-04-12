@@ -10,8 +10,8 @@ from datasets_local.metadata import subset_csv
 import pandas as pd
 
 
-# create subset csv
-folder_name = 'breast10p_RGB'
+# HP
+folder_name = 'breast40k_RGB'
 reference_file = 'metadata_Hologic.csv'
 
 files_folder = repo_path / 'data/images' / f'{folder_name}'
