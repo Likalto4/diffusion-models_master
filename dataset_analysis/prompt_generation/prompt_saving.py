@@ -11,7 +11,7 @@ import pandas as pd
 
 
 # HP
-folder_name = 'breast40k_RGB'
+folder_name = 'breast10p_RGB'
 reference_file = 'metadata_Hologic.csv'
 
 files_folder = repo_path / 'data/images' / f'{folder_name}'
@@ -37,7 +37,7 @@ metadata['lesion_status'] = metadata['marks'].apply(lambda x: 'with lesion' if x
 # prompt column
 metadata['prompt'] = 'mammogram, ' + metadata['view_position'] + ' view, ' + metadata['size'] + ' size, ' + metadata['lesion_status']
 # drop all columns that are not prompt or image_id
-metadata = metadata.drop(columns=['view_position', 'size'])
+metadata = metadata[['file_name', 'prompt']]
 # transform to json
 metadata = metadata.to_json(orient='records', lines=True)
 # use same folder as files folder
