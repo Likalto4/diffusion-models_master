@@ -158,7 +158,7 @@ def main():
                                         'client_status': client.status.value,
                                         'marks': True if image.marks else False,
                                         'num_marks': len(image.marks) if image.marks else None,
-                                        'bbox': f'({image.marks[0].boundingBox.x1},{image.marks[0].boundingBox.y1},{image.marks[0].boundingBox.x2},{image.marks[0].boundingBox.y2})'
+                                        'bbox': f'({image.marks[0].boundingBox.x1},{image.marks[0].boundingBox.y1},{image.marks[0].boundingBox.x2},{image.marks[0].boundingBox.y2})' if image.marks else None,
                                     }, index=[0])
                                 # go through the tags and save the json-contained information
                                 for tag in tags:
