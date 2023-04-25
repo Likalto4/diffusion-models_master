@@ -124,7 +124,7 @@ def main():
     empty_json = 0
 
     # read dicom tags yaml
-    with open('metadata/dicom_tags.yaml', 'r') as file:
+    with open(repo_path / 'dataset_analysis/metadata/dicom_tags.yaml', 'r') as file:
         tags = yaml.load(file, Loader=yaml.FullLoader)
 
     # Initialize the statistics object
@@ -157,6 +157,8 @@ def main():
                                         'json_path': image.json_path,
                                         'client_status': client.status.value,
                                         'marks': True if image.marks else False,
+                                        'num_marks': len(image.marks) if image.marks else None,
+                                        'bbox': f'({image.marks[0].boundingBox.x1},{image.marks[0].boundingBox.y1},{image.marks[0].boundingBox.x2},{image.marks[0].boundingBox.y2})'
                                     }, index=[0])
                                 # go through the tags and save the json-contained information
                                 for tag in tags:
@@ -166,7 +168,7 @@ def main():
                                     [df, df_sub], axis=0)                        
 
     # save the dataframe
-    df.to_csv('metadata/metadata_FP.csv', index=False)
+    df.to_csv(repo_path / 'dataset_analysis/metadata/metadata_FP.csv', index=False)
 
     # print the statistics
     subclients_num =  len(df['client_id'].unique())

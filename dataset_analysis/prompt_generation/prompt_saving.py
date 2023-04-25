@@ -26,13 +26,16 @@ metadata = metadata.merge(area_pd, on='image_id')
 
 
 # get df with name id and text info of interest
-metadata = metadata[['image_id', 'view_position', 'size']]
+metadata = metadata[['image_id', 'view_position', 'size', 'marks']]
 # add exension to the end of the image_id
 metadata['image_id'] = metadata['image_id'].astype(str) + '.png'
 # change image_id to file_name
 metadata = metadata.rename(columns={'image_id': 'file_name'})
-# prompt column must contain 'mammogram' plus the view position
-metadata['prompt'] = 'mammogram, ' + metadata['view_position'] + ' view, ' + metadata['size'] + ' size'
+# lesion status. add column with text according to the marks value
+metadata['lesion_status'] = metadata['marks'].apply(lambda x: 'with lesion' if x == True else 'without lesion')
+
+# prompt column
+metadata['prompt'] = 'mammogram, ' + metadata['view_position'] + ' view, ' + metadata['size'] + ' size, ' + metadata['lesion_status']
 # drop all columns that are not prompt or image_id
 metadata = metadata.drop(columns=['view_position', 'size'])
 # transform to json
