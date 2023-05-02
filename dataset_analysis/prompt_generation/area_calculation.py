@@ -11,12 +11,14 @@ import pandas as pd
 import numpy as np
 import cv2 as cv
 from tqdm import tqdm
+from datasets_local.metadata import create_folder_csv
 
 # HP
-folder_name = 'breast40k_RGB'
+folder_name = 'breast40k_RGB_healthy'
 
 # read paths csv
-filenames_csv = repo_path / f'data/filenames/{folder_name}.csv'
+folder_path = repo_path / f'data/images/{folder_name}'
+filenames_csv = create_folder_csv(folder_path, 'png') # if it doesn't exist, create it
 filenames_pd = pd.read_csv(filenames_csv, header=None)[0].values
 
 #create pandas for the results

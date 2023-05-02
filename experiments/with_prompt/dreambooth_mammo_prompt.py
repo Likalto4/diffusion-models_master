@@ -590,6 +590,8 @@ def main():
         run = os.path.split(__file__)[-1].split(".")[0]
         accelerator.init_trackers(run, config=vars(args)) # add args to wandb
         wandb.save(str(config_path)) if args.report_to=="wandb" else None
+        dataset_metadata_path = os.path.join(args.output_dir, "metadata.jsonl") # save metadata
+        wandb.save(str(dataset_metadata_path)) if args.report_to=="wandb" else None
 
     # Train!
     total_batch_size = args.train_batch_size * accelerator.num_processes * args.gradient_accumulation_steps

@@ -6,8 +6,8 @@ revision: fp16 # str # type of model kept for fp16 optimization
 # Pretrained tokenizer name or path if not the same as model_name
 tokenizer_name: null # str
 # data:
-instance_data_dir: /home/ricardo/master_thesis/diffusion-models_master/data/images/breast40k_RGB # Mandatory, str
-output_dir: /home/ricardo/master_thesis/diffusion-models_master/results/mammo40k_healthy-lesion # Mandatory, str
+instance_data_dir: /home/ricardo/master_thesis/diffusion-models_master/data/images/breast40k_RGB_healthy # Mandatory, str
+output_dir: /home/ricardo/master_thesis/diffusion-models_master/results/mammo40k_healthy-only # Mandatory, str
 # hub:
 push_to_hub: true
 hub_token: null
@@ -15,7 +15,7 @@ hub_model_id: null # name of the model on the hub (output dir instead)
 # logging:
 logging_dir: logs # log diredctory
 report_to: wandb
-validation_prompt: mammogram, MLO view, small size, with lesion # validation prompt for logging
+validation_prompt: mammogram, MLO view, small size # validation prompt for logging
 num_validation_images: 4
 validation_steps: 100 # how often to log validation images
 # prior_preservation:
@@ -27,7 +27,7 @@ num_class_images: 100
 sample_batch_size: 4
 prior_generation_precision: null # fp16, bf16, or fp32
 # checkpointing:
-checkpointing_steps: 70000 # save state every checkpointing_steps
+checkpointing_steps: 1000 # save state every checkpointing_steps
 checkpoints_total_limit: null # limit of total checkpoints to save
 resume_from_checkpoint: null # wheather to resume from checkpoint
 # training:
@@ -38,7 +38,7 @@ train_text_encoder: true # train the text encoder
 train_batch_size: 16 # per device
 gradient_accumulation_steps: 16
 num_train_epochs: 1
-max_train_steps: 1000 # overrides num_train_epochs
+max_train_steps: 1500 # overrides num_train_epochs
 learning_rate: 1.0e-6 # lr after (potential) warmup
 scale_lr: False #Scale the learning rate by the number of GPUs, gradient accumulation steps, and batch size
 lr_scheduler: constant
