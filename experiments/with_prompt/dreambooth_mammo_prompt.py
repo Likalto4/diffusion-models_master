@@ -14,7 +14,7 @@ sys.path.insert(0,str(repo_path)) if str(repo_path) not in sys.path else None
 exp_path = Path.cwd().resolve() # experiment path
 # visible GPUs
 os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"]="0"
+os.environ["CUDA_VISIBLE_DEVICES"]="1"
 
 import argparse
 import yaml
@@ -590,7 +590,8 @@ def main():
         run = os.path.split(__file__)[-1].split(".")[0]
         accelerator.init_trackers(run, config=vars(args)) # add args to wandb
         wandb.save(str(config_path)) if args.report_to=="wandb" else None
-        dataset_metadata_path = os.path.join(args.output_dir, "metadata.jsonl") # save metadata
+        dataset_metadata_path = os.path.join(args.instance_data_dir, "metadata.jsonl") # save metadata
+        print(f"Saving dataset metadata in {dataset_metadata_path}")
         wandb.save(str(dataset_metadata_path)) if args.report_to=="wandb" else None
 
     # Train!
@@ -745,7 +746,9 @@ def main():
         pipeline.save_pretrained(args.output_dir)
 
         if args.push_to_hub:
+            logger.info("Pushing to the hub...")
             repo.push_to_hub(commit_message="End of training", blocking=False, auto_lfs_prune=True)
+            logger.info("Pushed to the hub...successfull")
 
     accelerator.end_training()
 
