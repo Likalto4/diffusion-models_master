@@ -81,7 +81,7 @@ for i, row in metadata.iterrows():
     # convert to RGB
     im_RGB = np.stack((im_uint8,)*3, axis=-1)
     # save as png
-    saving_path = lesion_folder_path / str(row['image_id'] + '_lesion.png')
+    saving_path = lesion_folder_path / str(row['image_id'] + '.png')
     cv.imwrite(str(saving_path), im_RGB)
     # update progress bar
     tqdm_bar.update()
