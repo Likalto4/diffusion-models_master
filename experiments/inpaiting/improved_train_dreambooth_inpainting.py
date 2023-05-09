@@ -3,23 +3,20 @@ import hashlib
 import itertools
 import math
 import os
+import re
 import random
 from pathlib import Path
+from typing import Optional
 
 import numpy as np
 import torch
 import torch.nn.functional as F
 import torch.utils.checkpoint
+from torch.utils.data import Dataset
+
 from accelerate import Accelerator
 from accelerate.logging import get_logger
-from accelerate.utils import ProjectConfiguration, set_seed
-from huggingface_hub import create_repo, upload_folder
-from PIL import Image, ImageDraw
-from torch.utils.data import Dataset
-from torchvision import transforms
-from tqdm.auto import tqdm
-from transformers import CLIPTextModel, CLIPTokenizer
-
+from accelerate.utils import set_seed
 from diffusers import (
     AutoencoderKL,
     DDPMScheduler,
@@ -29,15 +26,21 @@ from diffusers import (
 )
 from diffusers.optimization import get_scheduler
 from diffusers.utils import check_min_version
+from diffusers.utils.import_utils import is_xformers_available
+from huggingface_hub import HfFolder, Repository, whoami
+from PIL import Image, ImageDraw, ImageChops
+from torchvision import transforms
+from tqdm.auto import tqdm
+from transformers import CLIPTextModel, CLIPTokenizer
 
 
 # Will error if the minimal version of diffusers is not installed. Remove at your own risks.
-check_min_version("0.13.0.dev0")
+check_min_version("0.10.0.dev0")
 
 logger = get_logger(__name__)
 
 
-def prepare_mask_and_masked_image(image, mask):
+def prepare_mask_and_masked_image(image, mask, discretize=True):
     image = np.array(image.convert("RGB"))
     image = image[None].transpose(0, 3, 1, 2)
     image = torch.from_numpy(image).to(dtype=torch.float32) / 127.5 - 1.0
@@ -45,18 +48,26 @@ def prepare_mask_and_masked_image(image, mask):
     mask = np.array(mask.convert("L"))
     mask = mask.astype(np.float32) / 255.0
     mask = mask[None, None]
-    mask[mask < 0.5] = 0
-    mask[mask >= 0.5] = 1
+    if discretize:
+        mask[mask < 0.5] = 0
+        mask[mask >= 0.5] = 1
+    else:
+        mask[mask < 0.0] = 0
+        mask[mask >= 1.0] = 1
     mask = torch.from_numpy(mask)
 
-    masked_image = image * (mask < 0.5)
+    masked_image = image * (mask < 0.5) if discretize else image * (1 - mask)
 
     return mask, masked_image
 
 
 # generate random masks
-def random_mask(im_shape, ratio=1, mask_full_image=False):
-    mask = Image.new("L", im_shape, 0) # creates a new 8-bit grayscale image (L)
+def random_mask(im_shape, ratio=1, mask_full_image=False, mask_scale_min=1.0, mask_scale_max=1.0, mask_dropout_prob=0.25):
+    mask = Image.new("L", im_shape, 0)
+    if random.random() < mask_dropout_prob:
+        # print("mask dropout")
+        Image.new("L", im_shape, 255)
+        return mask
     draw = ImageDraw.Draw(mask)
     size = (random.randint(0, int(im_shape[0] * ratio)), random.randint(0, int(im_shape[1] * ratio)))
     # use this to always mask the whole image
@@ -76,6 +87,8 @@ def random_mask(im_shape, ratio=1, mask_full_image=False):
             fill=255,
         )
 
+    mask_scale = random.uniform(mask_scale_min, mask_scale_max) if mask_scale_min != mask_scale_max else mask_scale_min
+    mask = ImageChops.multiply(mask, Image.new("L", im_shape, int(mask_scale * 255)))
     return mask
 
 
@@ -87,6 +100,22 @@ def parse_args():
         default=None,
         required=True,
         help="Path to pretrained model or model identifier from huggingface.co/models.",
+    )
+    parser.add_argument(
+        "--pretrained_txt2img_model_name_or_path",
+        type=str,
+        default=None,
+        help="Path to pretrained model or model identifier from huggingface.co/models. Used for generating class images when using with_prior_preservation.",
+    )
+    parser.add_argument(
+        "--revision",
+        type=str,
+        default=None,
+        required=False,
+        help=(
+            "Revision of pretrained model identifier from huggingface.co/models. Trainable model components should be"
+            " float32 precision."
+        ),
     )
     parser.add_argument(
         "--tokenizer_name",
@@ -112,7 +141,56 @@ def parse_args():
         "--instance_prompt",
         type=str,
         default=None,
+        required=False,
         help="The prompt with identifier specifying the instance",
+    )
+    parser.add_argument(
+        "--instance_prompt_shuffle_prob",
+        default=0.0,
+        type=float,
+        help="The probability of randomizing the instance prompt.",
+    )
+    parser.add_argument(
+        "--mask_scale_min",
+        default=1.0,
+        type=float,
+        help="The probability of randomizing the instance prompt.",
+    )
+    parser.add_argument(
+        "--mask_scale_max",
+        default=1.0,
+        type=float,
+        help="The probability of randomizing the instance prompt.",
+    )
+    parser.add_argument(
+        "--mask_dropout_prob",
+        default=0.25,
+        type=float,
+        help="The probability of using a blank mask."
+    )
+    parser.add_argument(
+        "--class_mask_scale_min",
+        default=1.0,
+        type=float,
+        help="The probability of randomizing the instance prompt for the class images.",
+    )
+    parser.add_argument(
+        "--class_mask_scale_max",
+        default=1.0,
+        type=float,
+        help="The probability of randomizing the instance prompt for the class images.",
+    )
+    parser.add_argument(
+        "--class_mask_dropout_prob",
+        default=0.25,
+        type=float,
+        help="The probability of using a blank mask for the class images."
+    )
+    parser.add_argument(
+        "--instance_prompt_sep_token",
+        type=str,
+        default=", ",
+        help="The seperator to use to randomize the substrings in the instance prompt.",
     )
     parser.add_argument(
         "--class_prompt",
@@ -125,6 +203,18 @@ def parse_args():
         default=False,
         action="store_true",
         help="Flag to add prior preservation loss.",
+    )
+    parser.add_argument(
+        "--use_custom_instance_mask",
+        default=False,
+        action="store_true",
+        help="Flag to add custom mask images.",
+    )
+    parser.add_argument(
+        "--discretize_mask", action="store_true", help="Whether or not discretize mask (make all values 0 or 1)."
+    )
+    parser.add_argument(
+        "--discretize_class_mask", action="store_true", help="Whether or not discretize masks of class images (make all values 0 or 1)."
     )
     parser.add_argument("--prior_loss_weight", type=float, default=1.0, help="The weight of prior preservation loss.")
     parser.add_argument(
@@ -153,13 +243,7 @@ def parse_args():
         ),
     )
     parser.add_argument(
-        "--center_crop",
-        default=False,
-        action="store_true",
-        help=(
-            "Whether to center crop the input images to the resolution. If not set, the images will be randomly"
-            " cropped. The images will be resized to the resolution first before cropping."
-        ),
+        "--center_crop", action="store_true", help="Whether to center crop images before resizing to resolution"
     )
     parser.add_argument("--train_text_encoder", action="store_true", help="Whether to train the text encoder")
     parser.add_argument(
@@ -246,7 +330,6 @@ def parse_args():
             "and an Nvidia Ampere GPU."
         ),
     )
-    parser.add_argument("--local_rank", type=int, default=-1, help="For distributed training: local_rank")
     parser.add_argument(
         "--checkpointing_steps",
         type=int,
@@ -258,16 +341,6 @@ def parse_args():
         ),
     )
     parser.add_argument(
-        "--checkpoints_total_limit",
-        type=int,
-        default=None,
-        help=(
-            "Max number of checkpoints to store. Passed as `total_limit` to the `Accelerator` `ProjectConfiguration`."
-            " See Accelerator::save_state https://huggingface.co/docs/accelerate/package_reference/accelerator#accelerate.Accelerator.save_state"
-            " for more docs"
-        ),
-    )
-    parser.add_argument(
         "--resume_from_checkpoint",
         type=str,
         default=None,
@@ -276,6 +349,12 @@ def parse_args():
             ' `--checkpointing_steps`, or `"latest"` to automatically select the last available checkpoint.'
         ),
     )
+    parser.add_argument("--local_rank", type=int, default=-1, help="For distributed training: local_rank")
+    parser.add_argument("--num_workers", type=int, default=1, help="Number of processes to use for data loading.")
+    parser.add_argument("--pin_memory", action="store_true", help="Whether or not to pin memory for data loading.")
+    parser.add_argument("--persistent_workers", action="store_true", help="Whether or not to use persistent workers.")
+    parser.add_argument("--prefetch_factor", type=int, default=2, help="Number of batches to prefetch.")
+    parser.add_argument("--drop_incomplete_batches", action="store_true", help="Whether or not to drop incomplete batches. (May help stabilize gradient)")
 
     args = parser.parse_args()
     env_local_rank = int(os.environ.get("LOCAL_RANK", -1))
@@ -294,7 +373,7 @@ def parse_args():
     return args
 
 
-class DreamBoothDataset(Dataset):
+class DreamBoothInpaintDataset(Dataset):
     """
     A dataset to prepare the instance and class images with the prompts for fine-tuning the model.
     It pre-processes the images and the tokenizes prompts.
@@ -308,7 +387,21 @@ class DreamBoothDataset(Dataset):
         class_data_root=None,
         class_prompt=None,
         size=512,
+        instance_prompt_shuffle_prob=0.0,
+        instance_prompt_sep_token=", ",
+        use_custom_instance_mask=False,
         center_crop=False,
+        discretize=True,
+        class_discretize=True,
+        ratio=1.0,
+        class_ratio=1.0,
+        mask_full_image=False,
+        mask_scale_min=1.0,
+        mask_scale_max=1.0,
+        class_mask_scale_min=1.0,
+        class_mask_scale_max=1.0,
+        mask_dropout_prob=0.0,
+        class_mask_dropout_prob=0.0,
     ):
         self.size = size
         self.center_crop = center_crop
@@ -322,6 +415,20 @@ class DreamBoothDataset(Dataset):
         self.num_instance_images = len(self.instance_images_path)
         self.instance_prompt = instance_prompt
         self._length = self.num_instance_images
+        self.instance_prompt_shuffle_prob = instance_prompt_shuffle_prob
+        self.instance_prompt_sep_token = instance_prompt_sep_token
+        self.use_custom_instance_mask = use_custom_instance_mask
+        self.discretize = discretize
+        self.class_discretize = class_discretize
+        self.ratio = ratio
+        self.class_ratio = class_ratio
+        self.mask_full_image = mask_full_image
+        self.mask_scale_min = mask_scale_min
+        self.mask_scale_max = mask_scale_max
+        self.class_mask_scale_min = class_mask_scale_min
+        self.class_mask_scale_max = class_mask_scale_max
+        self.mask_dropout_prob = mask_dropout_prob
+        self.class_mask_dropout_prob = class_mask_dropout_prob
 
         if class_data_root is not None:
             self.class_data_root = Path(class_data_root)
@@ -352,16 +459,33 @@ class DreamBoothDataset(Dataset):
 
     def __getitem__(self, index):
         example = {}
-        instance_image = Image.open(self.instance_images_path[index % self.num_instance_images])
+        instance_image_path = self.instance_images_path[index % self.num_instance_images]
+        instance_image = Image.open(instance_image_path)
         if not instance_image.mode == "RGB":
             instance_image = instance_image.convert("RGB")
         instance_image = self.image_transforms_resize_and_crop(instance_image)
+        instance_prompt = self.instance_prompt
+        if instance_prompt in ["", None]:
+            instance_prompt = re.sub(r'\..*$', '', instance_image_path.name)
+            instance_prompt = re.sub(r'_\d+', '', instance_prompt) # remove _1, _2, etc. for duplicate images
+            if random.random() < self.instance_prompt_shuffle_prob:
+                instance_prompt = self.instance_prompt_sep_token.join(random.sample(instance_prompt.split(self.instance_prompt_sep_token), len(instance_prompt.split(self.instance_prompt_sep_token))))
 
-        example["PIL_images"] = instance_image
+        if self.use_custom_instance_mask:
+            mask = Image.open(instance_image_path.parent / (instance_image_path.stem + "_mask.png"))
+            if not mask.mode == "L":
+                mask = mask.convert("L")
+            mask = self.image_transforms_resize_and_crop(mask)
+        else:
+            # generate a random mask
+            mask = random_mask(instance_image.size, ratio=self.ratio, mask_full_image=self.mask_full_image, mask_scale_min=self.mask_scale_min, mask_scale_max=self.mask_scale_max, mask_dropout_prob=self.mask_dropout_prob)
+        # prepare mask and masked image
+        mask, masked_image = prepare_mask_and_masked_image(instance_image, mask, discretize=self.discretize)
+        example["masks"] = mask
+        example["masked_images"] = masked_image
         example["instance_images"] = self.image_transforms(instance_image)
-
         example["instance_prompt_ids"] = self.tokenizer(
-            self.instance_prompt,
+            instance_prompt,
             padding="do_not_pad",
             truncation=True,
             max_length=self.tokenizer.model_max_length,
@@ -372,8 +496,11 @@ class DreamBoothDataset(Dataset):
             if not class_image.mode == "RGB":
                 class_image = class_image.convert("RGB")
             class_image = self.image_transforms_resize_and_crop(class_image)
+            class_mask = random_mask(class_image.size, ratio=self.class_ratio, mask_full_image=self.mask_full_image, mask_scale_min=self.class_mask_scale_min, mask_scale_max=self.class_mask_scale_max, mask_dropout_prob=self.class_mask_dropout_prob)
+            class_mask, class_masked_image = prepare_mask_and_masked_image(class_image, class_mask, self.class_discretize)
+            example["class_masks"] = class_mask
+            example["class_masked_images"] = class_masked_image
             example["class_images"] = self.image_transforms(class_image)
-            example["class_PIL_images"] = class_image
             example["class_prompt_ids"] = self.tokenizer(
                 self.class_prompt,
                 padding="do_not_pad",
@@ -401,18 +528,57 @@ class PromptDataset(Dataset):
         return example
 
 
+def get_full_repo_name(model_id: str, organization: Optional[str] = None, token: Optional[str] = None):
+    if token is None:
+        token = HfFolder.get_token()
+    if organization is None:
+        username = whoami(token)["name"]
+        return f"{username}/{model_id}"
+    else:
+        return f"{organization}/{model_id}"
+
+
+class Collater:
+    def __init__(self, with_prior_preservation=False, tokenizer=None, mask_scale_min=1.0, mask_scale_max=1.0, mask_dropout_prob=0.25):
+        self.with_prior_preservation = with_prior_preservation
+        self.tokenizer = tokenizer
+        self.mask_scale_min = mask_scale_min
+        self.mask_scale_max = mask_scale_max
+        self.mask_dropout_prob = mask_dropout_prob
+
+    def __call__(self, examples):
+        input_ids = [example["instance_prompt_ids"] for example in examples]
+        pixel_values = [example["instance_images"] for example in examples]
+        masks = [example["masks"] for example in examples]
+        masked_images = [example["masked_images"] for example in examples]
+
+        # Concat class and instance examples for prior preservation.
+        # We do this to avoid doing two forward passes.
+        if self.with_prior_preservation:
+            input_ids += [example["class_prompt_ids"] for example in examples]
+            pixel_values += [example["class_images"] for example in examples]
+            masks += [example["class_masks"] for example in examples]
+            masked_images += [example["class_masked_images"] for example in examples]
+
+        pixel_values = torch.stack(pixel_values)
+        pixel_values = pixel_values.to(memory_format=torch.contiguous_format).float()
+
+        input_ids = self.tokenizer.pad({"input_ids": input_ids}, padding=True, return_tensors="pt").input_ids
+        masks = torch.stack(masks)
+        masked_images = torch.stack(masked_images)
+        batch = {"input_ids": input_ids, "pixel_values": pixel_values, "masks": masks, "masked_images": masked_images}
+        return batch
+
+
 def main():
     args = parse_args()
     logging_dir = Path(args.output_dir, args.logging_dir)
-
-    project_config = ProjectConfiguration(total_limit=args.checkpoints_total_limit)
 
     accelerator = Accelerator(
         gradient_accumulation_steps=args.gradient_accumulation_steps,
         mixed_precision=args.mixed_precision,
         log_with="tensorboard",
         logging_dir=logging_dir,
-        project_config=project_config,
     )
 
     # Currently, it's not possible to do gradient accumulation when training two models with accelerate.accumulate
@@ -435,8 +601,11 @@ def main():
 
         if cur_class_images < args.num_class_images:
             torch_dtype = torch.float16 if accelerator.device.type == "cuda" else torch.float32
-            pipeline = StableDiffusionInpaintPipeline.from_pretrained(
-                args.pretrained_model_name_or_path, torch_dtype=torch_dtype, safety_checker=None
+            pipeline = StableDiffusionPipeline.from_pretrained(
+                args.pretrained_txt2img_model_name_or_path,
+                torch_dtype=torch_dtype,
+                safety_checker=None,
+                revision=args.revision,
             )
             pipeline.set_progress_bar_config(disable=True)
 
@@ -444,24 +613,15 @@ def main():
             logger.info(f"Number of class images to sample: {num_new_images}.")
 
             sample_dataset = PromptDataset(args.class_prompt, num_new_images)
-            sample_dataloader = torch.utils.data.DataLoader(
-                sample_dataset, batch_size=args.sample_batch_size, num_workers=1
-            )
+            sample_dataloader = torch.utils.data.DataLoader(sample_dataset, batch_size=args.sample_batch_size)
 
             sample_dataloader = accelerator.prepare(sample_dataloader)
             pipeline.to(accelerator.device)
-            transform_to_pil = transforms.ToPILImage()
+
             for example in tqdm(
                 sample_dataloader, desc="Generating class images", disable=not accelerator.is_local_main_process
             ):
-                bsz = len(example["prompt"])
-                fake_images = torch.rand((3, args.resolution, args.resolution))
-                transform_to_pil = transforms.ToPILImage()
-                fake_pil_images = transform_to_pil(fake_images)
-
-                fake_mask = random_mask((args.resolution, args.resolution), ratio=1, mask_full_image=True)
-
-                images = pipeline(prompt=example["prompt"], mask_image=fake_mask, image=fake_pil_images).images
+                images = pipeline(example["prompt"]).images
 
                 for i, image in enumerate(images):
                     hash_image = hashlib.sha1(image.tobytes()).hexdigest()
@@ -474,13 +634,20 @@ def main():
 
     # Handle the repository creation
     if accelerator.is_main_process:
-        if args.output_dir is not None:
-            os.makedirs(args.output_dir, exist_ok=True)
-
         if args.push_to_hub:
-            repo_id = create_repo(
-                repo_id=args.hub_model_id or Path(args.output_dir).name, exist_ok=True, token=args.hub_token
-            ).repo_id
+            if args.hub_model_id is None:
+                repo_name = get_full_repo_name(Path(args.output_dir).name, token=args.hub_token)
+            else:
+                repo_name = args.hub_model_id
+            repo = Repository(args.output_dir, clone_from=repo_name)
+
+            with open(os.path.join(args.output_dir, ".gitignore"), "w+") as gitignore:
+                if "step_*" not in gitignore:
+                    gitignore.write("step_*\n")
+                if "epoch_*" not in gitignore:
+                    gitignore.write("epoch_*\n")
+        elif args.output_dir is not None:
+            os.makedirs(args.output_dir, exist_ok=True)
 
     # Load the tokenizer
     if args.tokenizer_name:
@@ -492,6 +659,15 @@ def main():
     text_encoder = CLIPTextModel.from_pretrained(args.pretrained_model_name_or_path, subfolder="text_encoder")
     vae = AutoencoderKL.from_pretrained(args.pretrained_model_name_or_path, subfolder="vae")
     unet = UNet2DConditionModel.from_pretrained(args.pretrained_model_name_or_path, subfolder="unet")
+
+    if is_xformers_available():
+        try:
+            unet.enable_xformers_memory_efficient_attention()
+        except Exception as e:
+            logger.warning(
+                "Could not enable memory efficient attention. Make sure xformers is installed"
+                f" correctly and a GPU is available: {e}"
+            )
 
     vae.requires_grad_(False)
     if not args.train_text_encoder:
@@ -533,60 +709,38 @@ def main():
 
     noise_scheduler = DDPMScheduler.from_pretrained(args.pretrained_model_name_or_path, subfolder="scheduler")
 
-    train_dataset = DreamBoothDataset(
+    train_dataset = DreamBoothInpaintDataset(
         instance_data_root=args.instance_data_dir,
         instance_prompt=args.instance_prompt,
         class_data_root=args.class_data_dir if args.with_prior_preservation else None,
         class_prompt=args.class_prompt,
         tokenizer=tokenizer,
         size=args.resolution,
+        instance_prompt_shuffle_prob=args.instance_prompt_shuffle_prob,
+        instance_prompt_sep_token=args.instance_prompt_sep_token,
+        use_custom_instance_mask=args.use_custom_instance_mask,
         center_crop=args.center_crop,
+        discretize=args.discretize_mask,
+        class_discretize=args.discretize_class_mask,
+        mask_scale_min=args.mask_scale_min,
+        mask_scale_max=args.mask_scale_max,
+        mask_dropout_prob=args.mask_dropout_prob,
+        class_mask_scale_min=args.class_mask_scale_min,
+        class_mask_scale_max=args.class_mask_scale_max,
+        class_mask_dropout_prob=args.class_mask_dropout_prob,
     )
 
-    def collate_fn(examples):
-        input_ids = [example["instance_prompt_ids"] for example in examples]
-        pixel_values = [example["instance_images"] for example in examples]
-
-        # Concat class and instance examples for prior preservation.
-        # We do this to avoid doing two forward passes.
-        if args.with_prior_preservation:
-            input_ids += [example["class_prompt_ids"] for example in examples]
-            pixel_values += [example["class_images"] for example in examples]
-            pior_pil = [example["class_PIL_images"] for example in examples]
-
-        masks = []
-        masked_images = []
-        for example in examples:
-            pil_image = example["PIL_images"]
-            # generate a random mask
-            mask = random_mask(pil_image.size, 1, False)
-            # prepare mask and masked image
-            mask, masked_image = prepare_mask_and_masked_image(pil_image, mask)
-
-            masks.append(mask)
-            masked_images.append(masked_image)
-
-        if args.with_prior_preservation:
-            for pil_image in pior_pil:
-                # generate a random mask
-                mask = random_mask(pil_image.size, 1, False)
-                # prepare mask and masked image
-                mask, masked_image = prepare_mask_and_masked_image(pil_image, mask)
-
-                masks.append(mask)
-                masked_images.append(masked_image)
-
-        pixel_values = torch.stack(pixel_values)
-        pixel_values = pixel_values.to(memory_format=torch.contiguous_format).float()
-
-        input_ids = tokenizer.pad({"input_ids": input_ids}, padding=True, return_tensors="pt").input_ids
-        masks = torch.stack(masks)
-        masked_images = torch.stack(masked_images)
-        batch = {"input_ids": input_ids, "pixel_values": pixel_values, "masks": masks, "masked_images": masked_images}
-        return batch
-
+    collater = Collater(args.with_prior_preservation, tokenizer, mask_scale_min=args.mask_scale_min, mask_scale_max=args.mask_scale_max, mask_dropout_prob=args.mask_dropout_prob)
     train_dataloader = torch.utils.data.DataLoader(
-        train_dataset, batch_size=args.train_batch_size, shuffle=True, collate_fn=collate_fn
+        train_dataset,
+        batch_size=args.train_batch_size,
+        shuffle=True,
+        collate_fn=collater,
+        num_workers=args.num_workers,
+        pin_memory=args.pin_memory,
+        persistent_workers=args.persistent_workers,
+        prefetch_factor=args.prefetch_factor,
+        drop_last=args.drop_incomplete_batches,
     )
 
     # Scheduler and math around the number of training steps.
@@ -660,21 +814,14 @@ def main():
             dirs = os.listdir(args.output_dir)
             dirs = [d for d in dirs if d.startswith("checkpoint")]
             dirs = sorted(dirs, key=lambda x: int(x.split("-")[1]))
-            path = dirs[-1] if len(dirs) > 0 else None
+            path = dirs[-1]
+        accelerator.print(f"Resuming from checkpoint {path}")
+        accelerator.load_state(os.path.join(args.output_dir, path))
+        global_step = int(path.split("-")[1])
 
-        if path is None:
-            accelerator.print(
-                f"Checkpoint '{args.resume_from_checkpoint}' does not exist. Starting a new training run."
-            )
-            args.resume_from_checkpoint = None
-        else:
-            accelerator.print(f"Resuming from checkpoint {path}")
-            accelerator.load_state(os.path.join(args.output_dir, path))
-            global_step = int(path.split("-")[1])
-
-            resume_global_step = global_step * args.gradient_accumulation_steps
-            first_epoch = global_step // num_update_steps_per_epoch
-            resume_step = resume_global_step % (num_update_steps_per_epoch * args.gradient_accumulation_steps)
+        resume_global_step = global_step * args.gradient_accumulation_steps
+        first_epoch = resume_global_step // num_update_steps_per_epoch
+        resume_step = resume_global_step % num_update_steps_per_epoch
 
     # Only show the progress bar once on each machine.
     progress_bar = tqdm(range(global_step, args.max_train_steps), disable=not accelerator.is_local_main_process)
@@ -693,13 +840,13 @@ def main():
                 # Convert images to latent space
 
                 latents = vae.encode(batch["pixel_values"].to(dtype=weight_dtype)).latent_dist.sample()
-                latents = latents * vae.config.scaling_factor
+                latents = latents * 0.18215
 
                 # Convert masked images to latent space
                 masked_latents = vae.encode(
                     batch["masked_images"].reshape(batch["pixel_values"].shape).to(dtype=weight_dtype)
                 ).latent_dist.sample()
-                masked_latents = masked_latents * vae.config.scaling_factor
+                masked_latents = masked_latents * 0.18215
 
                 masks = batch["masks"]
                 # resize the mask to latents shape as we concatenate the mask to the latents
@@ -709,7 +856,7 @@ def main():
                         for mask in masks
                     ]
                 )
-                mask = mask.reshape(-1, 1, args.resolution // 8, args.resolution // 8) #just removing one dimension
+                mask = mask.reshape(-1, 1, args.resolution // 8, args.resolution // 8)
 
                 # Sample noise that we'll add to the latents
                 noise = torch.randn_like(latents)
@@ -724,8 +871,6 @@ def main():
 
                 # concatenate the noised latents with the mask and the masked latents
                 latent_model_input = torch.cat([noisy_latents, mask, masked_latents], dim=1)
-                # here the noisy image, the mask and the masked image are concatenated.
-                # put together in one tensor
 
                 # Get the text embedding for conditioning
                 encoder_hidden_states = text_encoder(batch["input_ids"])[0]
@@ -799,12 +944,7 @@ def main():
         pipeline.save_pretrained(args.output_dir)
 
         if args.push_to_hub:
-            upload_folder(
-                repo_id=repo_id,
-                folder_path=args.output_dir,
-                commit_message="End of training",
-                ignore_patterns=["step_*", "epoch_*"],
-            )
+            repo.push_to_hub(commit_message="End of training", blocking=False, auto_lfs_prune=True)
 
     accelerator.end_training()
 
