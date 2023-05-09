@@ -60,7 +60,7 @@ for i, row in metadata.iterrows():
         # switch x coordinates
         coord[[0, 2]] = coord[[2, 0]]
     
-    # if any of the coordinates is negative, skip
+    # if any of the coordinates is negative, or the coordinates are zero skip
     if np.any(coord < 0) or (coord[0]-coord[2]) == 0:
         tqdm_bar.update()
         bad_image_count += 1
