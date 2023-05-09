@@ -21,7 +21,7 @@ from matplotlib import pyplot as plt
 # HP
 folder_name = 'breast40k'
 resolution = 512
-emergency_stop = 10
+emergency_stop = None
 
 # read metadata file
 metadata_path = repo_path / 'data/metadata'/f'lesions_{folder_name}.csv' 
