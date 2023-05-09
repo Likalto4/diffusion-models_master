@@ -73,6 +73,12 @@ def log_validation(text_encoder, tokenizer, unet, vae, args, accelerator, weight
         f"Running validation... \n Generating {args.num_validation_images} images with prompt:"
         f" {args.validation_prompt}."
     )
+    
+    # load input image
+    input_image = Image.open(args.val_input_image_path).convert("RGB")
+    # load mask image
+    mask_image = Image.open(args.val_mask_image_path).convert("RGB")
+    
     # create pipeline (note: unet and vae are loaded again in float32)
     pipeline = DiffusionPipeline.from_pretrained(
         args.pretrained_model_name_or_path,
@@ -93,7 +99,7 @@ def log_validation(text_encoder, tokenizer, unet, vae, args, accelerator, weight
     images = []
     for _ in range(args.num_validation_images):
         with torch.autocast("cuda"):
-            image = pipeline(args.validation_prompt, num_inference_steps=25, generator=generator).images[0]
+            image = pipeline(args.validation_prompt, image=input_image, mask_image=mask_image, num_inference_steps=25, generator=generator).images[0]
         images.append(image)
 
     for tracker in accelerator.trackers:

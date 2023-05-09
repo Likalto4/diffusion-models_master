@@ -18,6 +18,8 @@ report_to: wandb
 validation_prompt: mammogram, MLO view, small size # validation prompt for logging
 num_validation_images: 4
 validation_steps: 100 # how often to log validation images
+val_input_image_path: /home/ricardo/master_thesis/diffusion-models_master/experiments/inpaiting/data/pil_image.png
+val_mask_image_path: /home/ricardo/master_thesis/diffusion-models_master/experiments/inpaiting/data/mask.png
 # prior_preservation:
 with_prior_preservation: false
 class_data_dir: null # Class images folder for prior preservation
