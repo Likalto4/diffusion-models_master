@@ -32,7 +32,7 @@ def subset_csv(files_folder:Path, reference_folder:Path):
     """creates subset coming from the ids of the files in the files folder with reference to the referencer forlder
 
     Args:
-        files_folder (Path): files folder
+        files_folder (Path): files folder (absolute)
         reference_folder (Path): reference folder
     """
     csv_path = create_folder_csv(files_folder, 'png') # create name csv if it does not exist
