@@ -6,21 +6,21 @@ revision: fp16 # str # type of model kept for fp16 optimization
 # Pretrained tokenizer name or path if not the same as model_name
 tokenizer_name: null # str
 # data:
-instance_data_dir: /home/ricardo/master_thesis/diffusion-models_master/data/images/breast10p_RGB # Mandatory, str
-instance_prompt: a mammogram
-output_dir: /home/ricardo/master_thesis/diffusion-models_master/results/mammo10p_random-inpainting # Mandatory, str
+instance_data_dir: /home/ricardo/master_thesis/diffusion-models_master/data/images/breast40k_RGB_wlesions # Mandatory, str
+instance_prompt: a mammogram with a lesion
+output_dir: /home/ricardo/master_thesis/diffusion-models_master/results/mammo_lesion-inpainting # Mandatory, str
 # hub:
-push_to_hub: false
+push_to_hub: true
 hub_token: null
 hub_model_id: null # name of the model on the hub (output dir instead)
 # logging:
 logging_dir: logs # log diredctory
 report_to: wandb
-validation_prompt: a mammogram # validation prompt for logging
+validation_prompt: a mammogram with a lesion # validation prompt for logging
 num_validation_images: 4
 validation_steps: 250 # how often to log validation images
-val_input_image_path: /home/ricardo/master_thesis/diffusion-models_master/experiments/inpaiting/data/pil_image.png
-val_mask_image_path: /home/ricardo/master_thesis/diffusion-models_master/experiments/inpaiting/data/mask.png
+val_input_image_path: /home/ricardo/master_thesis/diffusion-models_master/experiments/inpainting/data/pil_image.png
+val_mask_image_path: /home/ricardo/master_thesis/diffusion-models_master/experiments/inpainting/data/mask.png
 # prior_preservation:
 with_prior_preservation: false
 class_data_dir: null # Class images folder for prior preservation
@@ -30,7 +30,7 @@ num_class_images: 100
 sample_batch_size: 4
 prior_generation_precision: null # fp16, bf16, or fp32
 # checkpointing:
-checkpointing_steps: 100000 # save state every checkpointing_steps
+checkpointing_steps: 3000 # save state every checkpointing_steps
 checkpoints_total_limit: null # limit of total checkpoints to save
 resume_from_checkpoint: null # wheather to resume from checkpoint
 # training:
@@ -41,7 +41,7 @@ train_text_encoder: true # train the text encoder
 train_batch_size: 8 # per device
 gradient_accumulation_steps: 1
 num_train_epochs: 1
-max_train_steps: 7500 # overrides num_train_epochs
+max_train_steps: 15000 # overrides num_train_epochs
 learning_rate: 1.0e-6 # lr after (potential) warmup
 scale_lr: False #Scale the learning rate by the number of GPUs, gradient accumulation steps, and batch size
 lr_scheduler: constant

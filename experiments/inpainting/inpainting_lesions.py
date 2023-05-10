@@ -153,52 +153,6 @@ def prepare_mask_and_masked_image(image, mask):
 
     return mask, masked_image
 
-# generate random masks
-def random_mask(im_shape, ratio=1, mask_full_image=False):
-    mask = Image.new("L", im_shape, 0) # creates a new 8-bit grayscale image (L)
-    draw = ImageDraw.Draw(mask)
-    size = (random.randint(0, int(im_shape[0] * ratio)), random.randint(0, int(im_shape[1] * ratio)))
-    # use this to always mask the whole image
-    if mask_full_image:
-        size = (int(im_shape[0] * ratio), int(im_shape[1] * ratio))
-    limits = (im_shape[0] - size[0] // 2, im_shape[1] - size[1] // 2)
-    center = (random.randint(size[0] // 2, limits[0]), random.randint(size[1] // 2, limits[1]))
-    draw_type = random.randint(0, 1)
-    if draw_type == 0 or mask_full_image:
-        draw.rectangle(
-            (center[0] - size[0] // 2, center[1] - size[1] // 2, center[0] + size[0] // 2, center[1] + size[1] // 2),
-            fill=255,
-        )
-    else:
-        draw.ellipse(
-            (center[0] - size[0] // 2, center[1] - size[1] // 2, center[0] + size[0] // 2, center[1] + size[1] // 2),
-            fill=255,
-        )
-
-    return mask
-
-
-def collate_fn(examples, with_prior_preservation=False):
-    input_ids = [example["instance_prompt_ids"] for example in examples]
-    pixel_values = [example["instance_images"] for example in examples]
-
-    # Concat class and instance examples for prior preservation.
-    # We do this to avoid doing two forward passes.
-    if with_prior_preservation:
-        input_ids += [example["class_prompt_ids"] for example in examples]
-        pixel_values += [example["class_images"] for example in examples]
-
-    pixel_values = torch.stack(pixel_values)
-    pixel_values = pixel_values.to(memory_format=torch.contiguous_format).float()
-
-    input_ids = torch.cat(input_ids, dim=0)
-
-    batch = {
-        "input_ids": input_ids,
-        "pixel_values": pixel_values,
-    }
-    return batch
-
 class DreamBoothDataset(Dataset):
     """
     A dataset to prepare the instance and class images with the prompts for fine-tuning the model.
@@ -264,6 +218,8 @@ class DreamBoothDataset(Dataset):
 
         example["PIL_images"] = instance_image
         example["instance_images"] = self.image_transforms(instance_image)
+        # save the instance path for mask recovery
+        example["instance_path"] = self.instance_images_path[index % self.num_instance_images]
 
         example["instance_prompt_ids"] = self.tokenizer(
             self.instance_prompt,
@@ -593,6 +549,13 @@ def main():
         center_crop=args.center_crop,
     )
 
+    def read_mask(instance_path):
+        instance_path = Path(instance_path) # be sure that is a path object
+        mask_path  = repo_path / 'data/masks' / instance_path.parent.name / instance_path.name
+        mask = Image.open(mask_path)
+        return mask
+
+
     def collate_fn(examples):
         input_ids = [example["instance_prompt_ids"] for example in examples]
         pixel_values = [example["instance_images"] for example in examples]
@@ -609,7 +572,7 @@ def main():
         for example in examples:
             pil_image = example["PIL_images"]
             # generate a random mask
-            mask = random_mask(pil_image.size, 1, False)
+            mask = read_mask(example['instance_path'])
             # prepare mask and masked image
             mask, masked_image = prepare_mask_and_masked_image(pil_image, mask)
 
@@ -619,7 +582,7 @@ def main():
         if args.with_prior_preservation:
             for pil_image in pior_pil:
                 # generate a random mask
-                mask = random_mask(pil_image.size, 1, False)
+                mask = read_mask(example['instance_path'])
                 # prepare mask and masked image
                 mask, masked_image = prepare_mask_and_masked_image(pil_image, mask)
 
