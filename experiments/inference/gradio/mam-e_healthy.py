@@ -32,6 +32,11 @@ def main():
         label='Prompt',
         info='Describe the type of mammogram you want to generate'
     )
+    negative_prompt_box = gr.Textbox(
+        value='',
+        label='Negative prompt',
+        info='Describe which features to avoid in the generated mammogram'
+    )
     guidance_slider = gr.Slider(
         minimum=0,
         maximum=10,
@@ -54,9 +59,9 @@ def main():
         info="Use seed for reproducibility",
     )
 
-    inputs = [prompt_box, guidance_slider, diffusion_slider, seed_checkbox]
+    inputs = [prompt_box, negative_prompt_box, guidance_slider, diffusion_slider, seed_checkbox]
 
-    def fn(prompt, guidance_scale, diffusion_steps, seed_checkbox):
+    def fn(prompt, negative_prompt, guidance_scale, diffusion_steps, seed_checkbox):
         """gradio inference function
 
         Args:
@@ -69,7 +74,6 @@ def main():
             PIL.Image: output of diffusion process
         """
         #internal HP
-        negative_prompt = ""
         num_samples = 1
 
         # seed
