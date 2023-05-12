@@ -25,7 +25,6 @@ def main():
         safety_checker=None,
         torch_dtype=torch.float16
     ).to("cuda")
-    generator = torch.Generator(device='cuda')
     pipe.scheduler = DPMSolverMultistepScheduler.from_config(pipe.scheduler.config)
     pipe.enable_xformers_memory_efficient_attention()
 
@@ -70,8 +69,13 @@ def main():
         label="inference diffusion steps",
         info="The number of steps in the denoising diffusion process.",
     )
-    
-    def fn(sketch, guidance_scale, diffusion_steps):
+    seed_checkbox = gr.Checkbox(
+        label="Use seed",
+        value=True,
+        info="Use seed for reproducibility",
+    )
+
+    def fn(sketch, guidance_scale, diffusion_steps, seed_checkbox):
         # get mask from input sketch
         mask = sketch['mask']
         ### generate images ###
@@ -79,8 +83,13 @@ def main():
         prompt = "a mammogram with a lesion"
         negative_prompt = ""
         num_samples = 1
-        seed = 1337 # for reproducibility
-        generator.manual_seed(seed)
+        if seed_checkbox:
+            generator = torch.Generator(device='cuda')
+            seed = 1337 # for reproducibility
+            generator.manual_seed(seed)    
+        else:
+            generator = None
+        
 
         with torch.autocast("cuda"), torch.inference_mode():
             image = pipe(
@@ -101,7 +110,7 @@ def main():
     # define the interface
     iface = Interface(
         fn=fn,
-        inputs=[sketch, guidance_slider, diffusion_slider],
+        inputs=[sketch, guidance_slider, diffusion_slider, seed_checkbox],
         outputs="image",
         title="MAM-E drawing tool",
         description="Draw a lesion",
