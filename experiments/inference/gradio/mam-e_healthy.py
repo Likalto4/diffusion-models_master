@@ -9,7 +9,7 @@ sys.path.insert(0,str(repo_path)) if str(repo_path) not in sys.path else None
 os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"   # see issue #152
 os.environ["CUDA_VISIBLE_DEVICES"]="0"
 
-from diffusers import DPMSolverMultistepScheduler, DiffusionPipeline
+from diffusers import DPMSolverMultistepScheduler, StableDiffusionPipeline
 import torch
 import gradio as gr
 from gradio import Interface
@@ -17,7 +17,7 @@ from gradio import Interface
 def main():
     # define model and load weights
     model_dir='Likalto4/mammo40k_healthy-only'
-    pipe = DiffusionPipeline.from_pretrained( # sable diffusion pipe?
+    pipe = StableDiffusionPipeline.from_pretrained( # sable diffusion pipe?
         model_dir,
         safety_checker=None,
         torch_dtype=torch.float16
