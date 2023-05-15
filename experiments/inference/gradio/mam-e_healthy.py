@@ -7,7 +7,7 @@ while '.gitignore' not in os.listdir(repo_path): # while not in the root of the 
 sys.path.insert(0,str(repo_path)) if str(repo_path) not in sys.path else None
 
 os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"   # see issue #152
-os.environ["CUDA_VISIBLE_DEVICES"]="0"
+os.environ["CUDA_VISIBLE_DEVICES"]="1"
 
 from diffusers import DPMSolverMultistepScheduler, StableDiffusionPipeline
 import torch
@@ -16,7 +16,8 @@ from gradio import Interface
 
 def main():
     # define model and load weights
-    model_dir='Likalto4/mammo40k_healthy-only'
+    # model_dir='Likalto4/mammo40k_healthy-only'
+    model_dir = '/home/ricardo/master_thesis/diffusion-models_master/results/mammo40k_healthy-only' # local path
     pipe = StableDiffusionPipeline.from_pretrained( # sable diffusion pipe?
         model_dir,
         safety_checker=None,
@@ -39,7 +40,7 @@ def main():
     )
     guidance_slider = gr.Slider(
         minimum=0,
-        maximum=10,
+        maximum=20,
         step=1,
         value=3,
         label="Guidance scale",
@@ -58,10 +59,16 @@ def main():
         value=True,
         info="Use seed for reproducibility",
     )
+    seed_value = gr.Number(
+        value=1337,
+        label="Seed",
+        info="Seed value",
+        precision=0, # integer
+)
 
-    inputs = [prompt_box, negative_prompt_box, guidance_slider, diffusion_slider, seed_checkbox]
+    inputs = [prompt_box, negative_prompt_box, guidance_slider, diffusion_slider, seed_checkbox, seed_value]
 
-    def fn(prompt, negative_prompt, guidance_scale, diffusion_steps, seed_checkbox):
+    def fn(prompt, negative_prompt, guidance_scale, diffusion_steps, seed_checkbox, seed):
         """gradio inference function
 
         Args:
@@ -79,8 +86,7 @@ def main():
         # seed
         if seed_checkbox:
             generator = torch.Generator(device='cuda')
-            seed = 1337 # for reproducibility
-            generator.manual_seed(seed)    
+            generator.manual_seed(seed)     # for reproducibility
         else:
             generator = None
         
