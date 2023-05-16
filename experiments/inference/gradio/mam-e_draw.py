@@ -74,8 +74,16 @@ def main():
         value=True,
         info="Use seed for reproducibility",
     )
+    seed_value = gr.Number(
+        value=1337,
+        label="Seed",
+        info="Seed value",
+        precision=0, # integer
+)
 
-    def fn(sketch, guidance_scale, diffusion_steps, seed_checkbox):
+    inputs = [sketch, guidance_slider, diffusion_slider, seed_checkbox, seed_value]
+
+    def fn(sketch, guidance_scale, diffusion_steps, seed_checkbox, seed_value):
         # get mask from input sketch
         mask = sketch['mask']
         ### generate images ###
@@ -85,8 +93,7 @@ def main():
         num_samples = 1
         if seed_checkbox:
             generator = torch.Generator(device='cuda')
-            seed = 1337 # for reproducibility
-            generator.manual_seed(seed)    
+            generator.manual_seed(seed_value)    
         else:
             generator = None
         
@@ -110,12 +117,13 @@ def main():
     # define the interface
     iface = Interface(
         fn=fn,
-        inputs=[sketch, guidance_slider, diffusion_slider, seed_checkbox],
+        inputs=inputs,
         outputs="image",
-        title="MAM-E drawing tool",
-        description="Draw a lesion",
+        title="MAM-E lesion drawing tool",
+        description="***Instructions***: Use the cursor to draw a lesion over the mammogram.<br> ***NOTE***: _If the server is busy, you will be placed in a queue. Please be patient!\n For any unexpected problem please refresh the page or contact the administrator._",
     )
 
+    iface.queue() # define queue
     iface.launch(debug=False, share=True)
 
 if __name__ == '__main__':
