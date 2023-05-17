@@ -35,7 +35,7 @@ def main():
     #metadata['lesion_status'] = metadata['marks'].apply(lambda x: 'with lesion' if x == True else 'healthy')
 
     # prompt column
-    metadata['prompt'] = 'a mammogram in ' + metadata['view_position'] + ' view'# + metadata['size'] + ' size' #+ metadata['lesion_status']
+    metadata['prompt'] = 'a mammogram in ' + metadata['view_position'] + ' view ' + 'with ' + metadata['size'] + ' area'
     # drop all columns that are not prompt or image_id
     metadata = metadata[['file_name', 'prompt']]
     # transform to json
