@@ -26,7 +26,7 @@ def main():
     
     not_uint16 = 0 # number of files that are not uint16
     # define tqdm bar and show current not uint16 files
-    bar = tqdm(total=len(files), desc=f'Not uint16: {not_uint16}')
+    bar = tqdm(total=len(files), desc=f'Saving pngs')
     for path in files:
         # read dicom
         ds = pydicom.dcmread(path)
@@ -47,6 +47,7 @@ def main():
         cv.imwrite(str(saving_path), image_array)
         bar.update(1)
     bar.close()
+    print(f'Number of files that are not uint16: {not_uint16}')
 
 if __name__ == '__main__':
     main()
