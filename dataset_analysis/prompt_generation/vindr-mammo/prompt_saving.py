@@ -6,8 +6,9 @@ while '.gitignore' not in os.listdir(repo_path): # while not in the root of the 
     repo_path = repo_path.parent #go up one level
 sys.path.insert(0,str(repo_path)) if str(repo_path) not in sys.path else None
 
-from datasets_local.metadata import subset_csv
+import shutil
 import pandas as pd
+from tqdm import tqdm
 
 def main():
     # metadata folder
@@ -17,7 +18,8 @@ def main():
     metadata = metadata[metadata['finding_categories'] == "['No Finding']"]
 
     # files found in the folder
-    directory_path = repo_path / 'data/vindr-mammo/images' / 'siemens15k_RGB'
+    folder_name = 'siemens15k_RGB'
+    directory_path = repo_path / 'data/vindr-mammo/images' / folder_name
     # get only the file stem
     file_names = [file.stem for file in directory_path.glob('*.png')]
     # make dataframe with names
@@ -35,12 +37,19 @@ def main():
     metadata_actual['image_id'] = metadata_actual['image_id'].astype(str) + '.png'
     # change image_id to file_name
     metadata_actual = metadata_actual.rename(columns={'image_id': 'file_name'})
+    
+    # create a copy of the files in metadata folder
+    new_images_dir = repo_path / 'data/vindr-mammo/images' / f'{folder_name}_healthy'
+    new_images_dir.mkdir(parents=False, exist_ok=True)
+    for file_name in tqdm(metadata_actual['file_name']):
+        file_path = directory_path / file_name
+        shutil.copy(file_path, new_images_dir)
+
     # transform to json
     metadata_actual = metadata_actual.to_json(orient='records', lines=True)
-    
 
     # use same folder as files folder
-    json_path = directory_path / 'metadata.jsonl'
+    json_path = new_images_dir / 'metadata.jsonl'
     # save json
     with open(json_path, 'w') as f:
         f.write(metadata_actual)

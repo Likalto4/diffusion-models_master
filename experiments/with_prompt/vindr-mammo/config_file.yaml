@@ -7,16 +7,16 @@ revision: fp16 # str # type of model kept for fp16 optimization
 # Pretrained tokenizer name or path if not the same as model_name
 tokenizer_name: null # str
 # data:
-instance_data_dir: /home/ricardo/master_thesis/diffusion-models_master/data/images/breast40k_RGB_healthy # Mandatory, str
-output_dir: /home/ricardo/master_thesis/diffusion-models_master/results/mammo-healty_size-newprompt # Mandatory, str
+instance_data_dir: /home/ricardo/master_thesis/diffusion-models_master/data/vindr-mammo/images/siemens15k_RGB_healthy # Mandatory, str
+output_dir: /home/ricardo/master_thesis/diffusion-models_master/results/vindr_siemens_healthy # Mandatory, str
 # hub:
 push_to_hub: true
 hub_token: null
-hub_model_id: Likalto4/2k_new-prompt # name of the model on the hub (output dir instead)
+hub_model_id: null # name of the model on the hub (output dir instead)
 # logging:
 logging_dir: logs # log diredctory
 report_to: wandb
-validation_prompt: a mammogram in MLO view with small area # validation prompt for logging
+validation_prompt: a mammogram in CC view with high density # validation prompt for logging
 num_validation_images: 4
 validation_steps: 100 # how often to log validation images
 guidance_scale: 4
