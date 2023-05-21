@@ -8,7 +8,7 @@ revision: fp16 # str # type of model kept for fp16 optimization
 tokenizer_name: null # str
 # data:
 instance_data_dir: /home/ricardo/master_thesis/diffusion-models_master/data/vindr-mammo/images/siemens15k_RGB_healthy # Mandatory, str
-output_dir: /home/ricardo/master_thesis/diffusion-models_master/results/vindr_siemens_healthy # Mandatory, str
+output_dir: /home/ricardo/master_thesis/diffusion-models_master/results/vindr-siemens_healthy-bs128 # Mandatory, str
 # hub:
 push_to_hub: true
 hub_token: null
@@ -38,7 +38,7 @@ resolution: 512
 center_crop: false # center or random crop # this is done independenly as preprocessing step
 train_text_encoder: true # train the text encoder
 train_batch_size: 16 # per device
-gradient_accumulation_steps: 16
+gradient_accumulation_steps: 8
 num_train_epochs: 1
 max_train_steps: 2000 # overrides num_train_epochs
 learning_rate: 1.0e-6 # lr after (potential) warmup
