@@ -17,6 +17,7 @@ from PIL import ImageOps
 
 def main():
     # define model and load weights
+    # model_dir='Likalto4/mammo40k_healthy-only'
     model_dir = 'Likalto4/vindr_siemens_healthy' # local path
     pipe = StableDiffusionPipeline.from_pretrained( # sable diffusion pipe?
         model_dir,
@@ -28,17 +29,10 @@ def main():
 
     # set gradio inputs
 
-    view_dropdown = gr.Dropdown(
-        choices=['CC', 'MLO'],
-        label="View",
-        value='CC',
-        info="Choose the view of the generated mammogram",
-    )
-    density_dropdown = gr.Dropdown(
-        choices=['very low', 'low', 'high', 'very high'],
-        label='Breast density',
-        value='high',
-        info='Choose the breast density of the generated mammogram'
+    prompt_box = gr.Textbox(
+        value='a mammogram in CC view with high density',
+        label='Prompt',
+        info='Describe the type of mammogram you want to generate'
     )
     negative_prompt_box = gr.Textbox(
         value='',
@@ -79,12 +73,15 @@ def main():
         info="Choose the laterality of the generated mammogram",
     )
     
-    inputs = [view_dropdown, density_dropdown, negative_prompt_box, # text inputs
-              guidance_slider, diffusion_slider, # sliders
-              seed_checkbox, seed_value, # seeds
+    inputs = [prompt_box,
+              negative_prompt_box,
+              guidance_slider,
+              diffusion_slider,
+              seed_checkbox, 
+              seed_value,
               laterality_box]
 
-    def fn(view, density, negative_prompt, guidance_scale, diffusion_steps, seed_checkbox, seed, laterality):
+    def fn(prompt, negative_prompt, guidance_scale, diffusion_steps, seed_checkbox, seed, laterality):
         """gradio inference function
 
         Args:
@@ -100,11 +97,6 @@ def main():
         # cancel in case of invalid laterality
         if len(laterality)>1:
             raise ValueError('laterality must be either L or R')
-        
-        # define input prompt
-        prompt = f'a mammogram in {view} view with {density} density'
-        
-        
         #internal HP
         num_samples = 1
 
