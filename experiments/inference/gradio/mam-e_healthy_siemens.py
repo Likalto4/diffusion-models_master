@@ -17,7 +17,7 @@ from gradio import Interface
 def main():
     # define model and load weights
     # model_dir='Likalto4/mammo40k_healthy-only'
-    model_dir = 'Likalto4/mammo40k_healthy_nosize' # local path
+    model_dir = 'Likalto4/vindr_siemens_healthy' # local path
     pipe = StableDiffusionPipeline.from_pretrained( # sable diffusion pipe?
         model_dir,
         safety_checker=None,
@@ -29,7 +29,7 @@ def main():
     # set gradio inputs
 
     prompt_box = gr.Textbox(
-        value='a mammogram in MLO view',
+        value='a mammogram in CC view with high density',
         label='Prompt',
         info='Describe the type of mammogram you want to generate'
     )
@@ -109,7 +109,7 @@ def main():
         fn=fn,
         inputs=inputs,
         outputs="image",
-        title="MAM-E: Generate mammograms",
+        title="MAM-E: Generate mammograms (SIEMENS mammogram)",
         description="Generate mammograms from text prompts using diffusion models. The generated images are healthy mammograms.",
     )
 
