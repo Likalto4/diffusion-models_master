@@ -31,15 +31,21 @@ def main():
     view_dropdown = gr.Dropdown(
         choices=['CC', 'MLO'],
         label="View",
-        value='CC',
+        value='MLO',
         info="Choose the view of the generated mammogram",
     )
     density_dropdown = gr.Dropdown(
         choices=['very low', 'low', 'high', 'very high'],
         label='Breast density',
         value='high',
-        info='Choose the breast density of the generated mammogram'
+        info='Choose the breast density'
     )
+    laterality_dropdown = gr.Dropdown(
+        choices=['L', 'R'],
+        label="Laterality",
+        value='L',
+        info="Choose the laterality",
+)
     negative_prompt_box = gr.Textbox(
         value='',
         label='Negative prompt',
@@ -49,7 +55,7 @@ def main():
         minimum=0,
         maximum=20,
         step=1,
-        value=4,
+        value=5,
         label="Guidance scale",
         info="The guidance scale controls how much the model should pay attention to the text promt.",
     )
@@ -58,7 +64,7 @@ def main():
         maximum=50,
         step=1,
         value=24,
-        label="inference diffusion steps",
+        label="Inference diffusion steps",
         info="The number of steps in the denoising diffusion process.",
     )
     seed_checkbox = gr.Checkbox(
@@ -72,19 +78,15 @@ def main():
         info="Seed value",
         precision=0, # integer
 )
-    laterality_box = gr.CheckboxGroup(
-        choices=['L', 'R'],
-        label="Laterality",
-        value=['L'],
-        info="Choose the laterality of the generated mammogram",
-    )
+
     
-    inputs = [view_dropdown, density_dropdown, negative_prompt_box, # text inputs
+    inputs = [view_dropdown, density_dropdown, negative_prompt_box, # text prompt
+              laterality_dropdown, # laterality
               guidance_slider, diffusion_slider, # sliders
               seed_checkbox, seed_value, # seeds
-              laterality_box]
+    ]
 
-    def fn(view, density, negative_prompt, guidance_scale, diffusion_steps, seed_checkbox, seed, laterality):
+    def fn(view, density, negative_prompt, laterality, guidance_scale, diffusion_steps, seed_checkbox, seed):
         """gradio inference function
 
         Args:
@@ -97,13 +99,8 @@ def main():
             PIL.Image: output of diffusion process
         """
         
-        # cancel in case of invalid laterality
-        if len(laterality)>1:
-            raise ValueError('laterality must be either L or R')
-        
         # define input prompt
         prompt = f'a mammogram in {view} view with {density} density'
-        
         
         #internal HP
         num_samples = 1
@@ -128,10 +125,9 @@ def main():
             ).images
         
         pil_output = image[0] # extract only one image
-        if laterality[0]=='R' and len(laterality)==1:
+        if laterality=='R':
             # flip image
             pil_output = ImageOps.mirror(pil_output)
-
 
         return pil_output
         
@@ -140,8 +136,12 @@ def main():
         fn=fn,
         inputs=inputs,
         outputs="image",
-        title="MAM-E: Generate mammograms (SIEMENS mammogram)",
-        description="Generate mammograms from text prompts using diffusion models. The generated images are healthy mammograms.",
+        title="MAM-E: Generate mammograms (SIEMENS unit)",
+        description="Generate mammograms from text prompts using diffusion models. The generated images are healthy mammograms.<br>" + \
+            "Examples for hyperparameters can be found at the bottom of the page.",
+        examples=[
+            ["MLO", "very high", "low quality", "R", 6, 40, True, 1337],
+        ],
     )
 
     iface.queue()
