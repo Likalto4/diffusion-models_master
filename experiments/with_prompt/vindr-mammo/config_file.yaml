@@ -8,7 +8,7 @@ revision: fp16 # str # type of model kept for fp16 optimization
 tokenizer_name: null # str
 # data:
 instance_data_dir: /home/ricardo/master_thesis/diffusion-models_master/data/vindr-mammo/images/siemens15k_RGB_healthy # Mandatory, str
-output_dir: /home/ricardo/master_thesis/diffusion-models_master/results/vindr-siemens_healthy-bs128 # Mandatory, str
+output_dir: /home/ricardo/master_thesis/diffusion-models_master/results/vindr-siemens_healthy_no-textencoder # Mandatory, str
 # hub:
 push_to_hub: true
 hub_token: null
@@ -18,7 +18,7 @@ logging_dir: logs # log diredctory
 report_to: wandb
 validation_prompt: a mammogram in CC view with high density # validation prompt for logging
 num_validation_images: 4
-validation_steps: 100 # how often to log validation images
+validation_steps: 200 # how often to log validation images
 guidance_scale: 4
 # prior_preservation:
 with_prior_preservation: false
@@ -36,7 +36,7 @@ resume_from_checkpoint: null # wheather to resume from checkpoint
 seed: 1337 # reproducibility seed # what happends in checkpiting?
 resolution: 512
 center_crop: false # center or random crop # this is done independenly as preprocessing step
-train_text_encoder: true # train the text encoder
+train_text_encoder: false # train the text encoder
 train_batch_size: 16 # per device
 gradient_accumulation_steps: 8
 num_train_epochs: 1
