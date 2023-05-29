@@ -6,9 +6,9 @@ revision: fp16 # str # type of model kept for fp16 optimization
 # Pretrained tokenizer name or path if not the same as model_name
 tokenizer_name: null # str
 # data:
-instance_data_dir: /home/ricardo/master_thesis/diffusion-models_master/data/images/breast40k_RGB_wlesions # Mandatory, str
+instance_data_dir: /home/ricardo/master_thesis/diffusion-models_master/data/vindr-mammo/images/siemens15k_RGB_wlesions # Mandatory, str
 instance_prompt: a mammogram with a lesion
-output_dir: /home/ricardo/master_thesis/diffusion-models_master/results/mammo_lesion-inpainting # Mandatory, str
+output_dir: /home/ricardo/master_thesis/diffusion-models_master/results/vindr_lesion-inpainting # Mandatory, str
 # hub:
 push_to_hub: true
 hub_token: null
@@ -30,7 +30,7 @@ num_class_images: 100
 sample_batch_size: 4
 prior_generation_precision: null # fp16, bf16, or fp32
 # checkpointing:
-checkpointing_steps: 3000 # save state every checkpointing_steps
+checkpointing_steps: 7000 # save state every checkpointing_steps
 checkpoints_total_limit: null # limit of total checkpoints to save
 resume_from_checkpoint: null # wheather to resume from checkpoint
 # training:

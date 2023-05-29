@@ -47,7 +47,6 @@ for j, row in metadata.iterrows(): # go over all images with lesion
     # get bbox
     x1, y1, x2, y2 = row.xmin, row.ymin, row.xmax, row.ymax
     coord = np.asarray([x1, y1, x2, y2], dtype=int)
-    coord = np.clip(coord, 0, None) # clip to 0 if negative
     side = row.laterality
 
     # add png extension
@@ -63,6 +62,12 @@ for j, row in metadata.iterrows(): # go over all images with lesion
         differer = 0
         file_name_save = file_name
 
+    # check if the image exist in the folder (only SIEMENS will appear)
+    if not image_path.exists():
+        tqdm_bar.update()
+        bad_image_count += 1
+        print(f'bad image {file_name} count is now {bad_image_count}')
+        continue
 
     # read images
     im = np.asarray(Image.open(image_path))
@@ -76,7 +81,9 @@ for j, row in metadata.iterrows(): # go over all images with lesion
     if side == 'R':
         coord[0] =  original_size[1] - coord[0]# -1
         coord[2] =  original_size[1] - coord[2]# -1
-    # if any of the coordinates is negative, or the coordinates are zero skip    
+    # clip to 0 if negative
+    coord = np.clip(coord, 0, None) 
+    # if the coordinates are zero skip    
     if np.any(coord < 0) or (coord[0]-coord[2]) == 0:
         tqdm_bar.update()
         bad_image_count += 1
