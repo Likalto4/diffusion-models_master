@@ -551,7 +551,7 @@ def main():
 
     def read_mask(instance_path):
         instance_path = Path(instance_path) # be sure that is a path object
-        mask_path  = repo_path / 'data/masks' / instance_path.parent.name / instance_path.name
+        mask_path  = repo_path / 'data/vindr-mammo/masks' / instance_path.parent.name / instance_path.name
         mask = Image.open(mask_path)
         return mask
 
