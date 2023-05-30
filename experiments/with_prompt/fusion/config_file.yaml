@@ -1,0 +1,65 @@
+# settings:
+# gpu_num: 1
+pretrained_model_name_or_path: runwayml/stable-diffusion-v1-5 #Mandatory, str
+pretrained_vae_name_or_path: null # str # no face VAE for mammography
+# version of the model to use
+revision: fp16 # str # type of model kept for fp16 optimization
+# Pretrained tokenizer name or path if not the same as model_name
+tokenizer_name: null # str
+# data:
+instance_data_dir: /home/ricardo/master_thesis/diffusion-models_master/data/fusion/images/RGB_healthy # Mandatory, str
+output_dir: /home/ricardo/master_thesis/diffusion-models_master/results/fusion_healthy # Mandatory, str
+# hub:
+push_to_hub: true
+hub_token: null
+hub_model_id: null # name of the model on the hub (output dir instead)
+# logging:
+logging_dir: logs # log diredctory
+report_to: wandb
+validation_prompt: a siemens mammogram in MLO view with high density and small area # validation prompt for logging
+num_validation_images: 4
+validation_steps: 100 # how often to log validation images
+guidance_scale: 4
+# prior_preservation:
+with_prior_preservation: false
+class_data_dir: null # Class images folder for prior preservation
+class_prompt: null # Class prompt for prior preservation
+prior_loss_weight: 1.0 # prior preservation loss weight
+num_class_images: 100
+sample_batch_size: 4
+prior_generation_precision: null # fp16, bf16, or fp32
+# checkpointing:
+checkpointing_steps: 1000 # save state every checkpointing_steps
+checkpoints_total_limit: null # limit of total checkpoints to save
+resume_from_checkpoint: null # wheather to resume from checkpoint
+# training:
+seed: 1337 # reproducibility seed # what happends in checkpiting?
+resolution: 512
+center_crop: false # center or random crop # this is done independenly as preprocessing step
+train_text_encoder: true # train the text encoder
+train_batch_size: 16 # per device
+gradient_accumulation_steps: 16
+num_train_epochs: 1
+max_train_steps: 3000 # overrides num_train_epochs
+learning_rate: 1.0e-6 # lr after (potential) warmup
+scale_lr: False #Scale the learning rate by the number of GPUs, gradient accumulation steps, and batch size
+lr_scheduler: constant
+lr_warmup_steps: 0
+lr_num_cycles: 1 #Number of hard resets of the lr in cosine_with_restarts scheduler
+lr_power: 1.0 #Power of the polynomial scheduler
+# optimizer
+dataloader_num_workers: 8
+drop_last: true
+adam_beta1: 0.9
+adam_beta2: 0.999
+adam_weight_decay: 1.0e-2
+adam_epsilon: 1.0e-8
+max_grad_norm: 1.0 # gradient clipping
+# memory:
+allow_tf32: true # on Ampere GPU only
+use_8bit_adam: true
+mixed_precision: 'fp16' # fp16 or bf16
+enable_xformers_memory_efficient_attention: true
+gradient_checkpointing: true
+set_grads_to_none: true
+local_rank: -1 # local rank for distributed training
