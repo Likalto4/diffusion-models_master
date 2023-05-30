@@ -10,6 +10,9 @@ import shutil
 import pandas as pd
 from tqdm import tqdm
 
+# HP
+make_copy_of_files = True
+
 def main():
     # metadata folder
     metadata_path = repo_path  /'data/vindr-mammo/metadata' / 'finding_annotations.csv'
@@ -41,9 +44,10 @@ def main():
     # create a copy of the files in metadata folder
     new_images_dir = repo_path / 'data/vindr-mammo/images' / f'{folder_name}_healthy'
     new_images_dir.mkdir(parents=False, exist_ok=True)
-    for file_name in tqdm(metadata_actual['file_name']):
-        file_path = directory_path / file_name
-        shutil.copy(file_path, new_images_dir)
+    if make_copy_of_files:        
+        for file_name in tqdm(metadata_actual['file_name']):
+            file_path = directory_path / file_name
+            shutil.copy(file_path, new_images_dir)
 
     # transform to json
     metadata_actual = metadata_actual.to_json(orient='records', lines=True)
