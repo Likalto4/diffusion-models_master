@@ -31,7 +31,7 @@ prior_generation_precision: null # fp16, bf16, or fp32
 # checkpointing:
 checkpointing_steps: 1000 # save state every checkpointing_steps
 checkpoints_total_limit: null # limit of total checkpoints to save
-resume_from_checkpoint: null # wheather to resume from checkpoint
+resume_from_checkpoint: latest # wheather to resume from checkpoint
 # training:
 seed: 1337 # reproducibility seed # what happends in checkpiting?
 resolution: 512
@@ -40,7 +40,7 @@ train_text_encoder: true # train the text encoder
 train_batch_size: 16 # per device
 gradient_accumulation_steps: 16
 num_train_epochs: 1
-max_train_steps: 3000 # overrides num_train_epochs
+max_train_steps: 6000 # overrides num_train_epochs
 learning_rate: 1.0e-6 # lr after (potential) warmup
 scale_lr: False #Scale the learning rate by the number of GPUs, gradient accumulation steps, and batch size
 lr_scheduler: constant
