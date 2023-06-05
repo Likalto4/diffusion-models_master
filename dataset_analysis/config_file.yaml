@@ -8,14 +8,14 @@ revision: fp16 # str # type of model kept for fp16 optimization
 tokenizer_name: null # str
 # data:
 instance_data_dir: /home/ricardo/master_thesis/diffusion-models_master/data/images/breast40k_RGB_healthy # Mandatory, str
-output_dir: /home/ricardo/master_thesis/diffusion-models_master/results/mammo-healthy_size_bs64 # Mandatory, str
+output_dir: /home/ricardo/master_thesis/diffusion-models_master/results/trial # Mandatory, str
 # hub:
-push_to_hub: true
+push_to_hub: false
 hub_token: null
 hub_model_id: null # name of the model on the hub (output dir instead)
 # logging:
 logging_dir: logs # log diredctory
-report_to: wandb
+report_to: null # tensorboard or comet_ml
 validation_prompt: a mammogram in MLO view with small area # validation prompt for logging
 num_validation_images: 4
 validation_steps: 100 # how often to log validation images

@@ -4,3 +4,6 @@ results/
 wandb/
 # inference images
 inference_images/
+# pychache
+__pycache__/
+flagged/

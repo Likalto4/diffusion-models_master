@@ -67,7 +67,7 @@ check_min_version("0.15.0.dev0")
 logger = get_logger(__name__)
 
 
-def log_validation(text_encoder, tokenizer, unet, vae, args, accelerator, weight_dtype, epoch, guidance_scale=7.5):
+def log_validation(text_encoder, tokenizer, unet, vae, args, accelerator, weight_dtype, epoch):
     logger.info(
         f"Running validation... \n Generating {args.num_validation_images} images with prompt:"
         f" {args.validation_prompt}."
@@ -92,7 +92,7 @@ def log_validation(text_encoder, tokenizer, unet, vae, args, accelerator, weight
     images = []
     for _ in range(args.num_validation_images):
         with torch.autocast("cuda"):
-            image = pipeline(args.validation_prompt, num_inference_steps=25, generator=generator, guidance_scale=guidance_scale).images[0]
+            image = pipeline(args.validation_prompt, num_inference_steps=25, generator=generator).images[0]
         images.append(image)
 
     for tracker in accelerator.trackers:
@@ -718,7 +718,7 @@ def main():
                         logger.info(f"Saved state to {save_path}")
 
                     if args.validation_prompt is not None and global_step % args.validation_steps == 0: # log images to check progress
-                        log_validation(text_encoder, tokenizer, unet, vae, args, accelerator, weight_dtype, epoch, args.guidance_scale)
+                        log_validation(text_encoder, tokenizer, unet, vae, args, accelerator, weight_dtype, epoch)
 
             logs = {"loss": loss.detach().item(), "lr": lr_scheduler.get_last_lr()[0]}
             progress_bar.set_postfix(**logs)

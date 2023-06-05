@@ -1,14 +1,14 @@
 # settings:
-# gpu_num: 1
-pretrained_model_name_or_path: runwayml/stable-diffusion-v1-5 #Mandatory, str
+pretrained_model_name_or_path: runwayml/stable-diffusion-inpainting
 pretrained_vae_name_or_path: null # str # no face VAE for mammography
 # version of the model to use
 revision: fp16 # str # type of model kept for fp16 optimization
 # Pretrained tokenizer name or path if not the same as model_name
 tokenizer_name: null # str
 # data:
-instance_data_dir: /home/ricardo/master_thesis/diffusion-models_master/data/images/breast40k_RGB_healthy # Mandatory, str
-output_dir: /home/ricardo/master_thesis/diffusion-models_master/results/mammo-healthy_size_bs64 # Mandatory, str
+instance_data_dir: /home/ricardo/master_thesis/diffusion-models_master/data/vindr-mammo/images/siemens15k_RGB_wlesions # Mandatory, str
+instance_prompt: a mammogram with a lesion
+output_dir: /home/ricardo/master_thesis/diffusion-models_master/results/vindr_lesion-inpainting # Mandatory, str
 # hub:
 push_to_hub: true
 hub_token: null
@@ -16,10 +16,11 @@ hub_model_id: null # name of the model on the hub (output dir instead)
 # logging:
 logging_dir: logs # log diredctory
 report_to: wandb
-validation_prompt: a mammogram in MLO view with small area # validation prompt for logging
+validation_prompt: a mammogram with a lesion # validation prompt for logging
 num_validation_images: 4
-validation_steps: 100 # how often to log validation images
-guidance_scale: 4
+validation_steps: 200 # how often to log validation images
+val_input_image_path: /home/ricardo/master_thesis/diffusion-models_master/experiments/inpainting/vindr-mammo/data/pil_image.png
+val_mask_image_path: /home/ricardo/master_thesis/diffusion-models_master/experiments/inpainting/vindr-mammo/data/mask.png
 # prior_preservation:
 with_prior_preservation: false
 class_data_dir: null # Class images folder for prior preservation
@@ -29,18 +30,18 @@ num_class_images: 100
 sample_batch_size: 4
 prior_generation_precision: null # fp16, bf16, or fp32
 # checkpointing:
-checkpointing_steps: 2000 # save state every checkpointing_steps
+checkpointing_steps: 4000 # save state every checkpointing_steps
 checkpoints_total_limit: null # limit of total checkpoints to save
-resume_from_checkpoint: latest # wheather to resume from checkpoint
+resume_from_checkpoint: null # wheather to resume from checkpoint
 # training:
-seed: 1337 # reproducibility seed # what happends in checkpiting?
+seed: 1337 # reproducibility seed
 resolution: 512
 center_crop: false # center or random crop # this is done independenly as preprocessing step
 train_text_encoder: true # train the text encoder
-train_batch_size: 16 # per device
-gradient_accumulation_steps: 4
+train_batch_size: 8 # per device
+gradient_accumulation_steps: 1
 num_train_epochs: 1
-max_train_steps: 8000 # overrides num_train_epochs
+max_train_steps: 10000 # overrides num_train_epochs
 learning_rate: 1.0e-6 # lr after (potential) warmup
 scale_lr: False #Scale the learning rate by the number of GPUs, gradient accumulation steps, and batch size
 lr_scheduler: constant
@@ -60,6 +61,6 @@ allow_tf32: true # on Ampere GPU only
 use_8bit_adam: true
 mixed_precision: 'fp16' # fp16 or bf16
 enable_xformers_memory_efficient_attention: true
-gradient_checkpointing: true
+gradient_checkpointing: false
 set_grads_to_none: true
 local_rank: -1 # local rank for distributed training
