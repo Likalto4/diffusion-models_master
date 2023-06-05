@@ -166,7 +166,7 @@ def main():
     )
 
     iface.queue()
-    iface.launch(debug=False, share=False)
+    iface.launch(debug=False, share=True)
 
 if __name__ == '__main__':
     main()
