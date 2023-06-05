@@ -13,6 +13,7 @@ from diffusers import DPMSolverMultistepScheduler, StableDiffusionPipeline
 import torch
 import gradio as gr
 from gradio import Interface
+from PIL import ImageOps
 
 def main():
     # define model and load weights
@@ -26,11 +27,41 @@ def main():
     pipe.enable_xformers_memory_efficient_attention()
 
     # set gradio inputs
-
-    prompt_box = gr.Textbox(
-        value='a siemens mammogram in MLO view with small area and very high density',
-        label='Prompt',
-        info='Describe the type of mammogram you want to generate'
+    vendor_dropdown = gr.Dropdown(
+        choices=['Siemens', 'Hologic'],
+        label="Vendor",
+        value='Siemens',
+        info="Choose the mammographic unit vendor",
+    )
+    view_dropdown = gr.Dropdown(
+        choices=['CC', 'MLO'],
+        label="View",
+        value='MLO',
+        info="Choose the mammogram view",
+    )
+    density_dropdown = gr.Dropdown(
+        choices=['very low', 'low', 'high', 'very high'],
+        label='Breast density',
+        value='very high',
+        info='Choose the breast density'
+    )
+    area_dropdown = gr.Dropdown(
+        choices=['small', 'medium', 'big'],
+        label='Breast area',
+        value='small',
+        info='Choose the breast area size'
+    )
+    priority_dropdown = gr.Dropdown(
+        choices=['area', 'density', 'only area', 'only density'],
+        label='Priority',
+        value='area',
+        info='Choose which feature to prioritize'
+    )
+    laterality_dropdown = gr.Dropdown(
+        choices=['L', 'R'],
+        label="Laterality",
+        value='L',
+        info="Choose the laterality",
     )
     negative_prompt_box = gr.Textbox(
         value='',
@@ -41,7 +72,7 @@ def main():
         minimum=0,
         maximum=20,
         step=1,
-        value=4,
+        value=6,
         label="Guidance scale",
         info="The guidance scale controls how much the model should pay attention to the text promt.",
     )
@@ -59,15 +90,19 @@ def main():
         info="Use seed for reproducibility",
     )
     seed_value = gr.Number(
-        value=1337,
+        value=1338,
         label="Seed",
         info="Seed value",
         precision=0, # integer
 )
 
-    inputs = [prompt_box, negative_prompt_box, guidance_slider, diffusion_slider, seed_checkbox, seed_value]
+    inputs = [vendor_dropdown,view_dropdown, density_dropdown, area_dropdown, laterality_dropdown,
+              priority_dropdown,
+              negative_prompt_box,
+              guidance_slider, diffusion_slider,
+              seed_checkbox, seed_value]
 
-    def fn(prompt, negative_prompt, guidance_scale, diffusion_steps, seed_checkbox, seed):
+    def fn(vendor, view, density, area, laterality, priority, negative_prompt, guidance_scale, diffusion_steps, seed_checkbox, seed):
         """gradio inference function
 
         Args:
@@ -81,6 +116,18 @@ def main():
         """
         #internal HP
         num_samples = 1
+
+        # prompt
+        if priority == 'area':
+            prompt = f'a {vendor} mammogram in {view} view with {area} area and {density} density'
+        elif priority == 'density':
+            prompt = f'a {vendor} mammogram in {view} view with {density} density and {area} area'
+        elif priority == 'only area':
+            prompt = f'a {vendor} mammogram in {view} view with {area} area'
+        elif priority == 'only density':
+            prompt = f'a {vendor} mammogram in {view} view with {density} density'
+        else:
+            raise ValueError('Invalid priority value')
 
         # seed
         if seed_checkbox:
@@ -100,16 +147,22 @@ def main():
                 width=512,
                 generator=generator,
             ).images
+        
+        pil_output = image[0] # extract only one image
+        if laterality=='R':
+            # flip image
+            pil_output = ImageOps.mirror(pil_output)
 
-        return image[0]
+        return pil_output
     
     # define the interface
     iface = Interface(
         fn=fn,
         inputs=inputs,
         outputs="image",
-        title="MAM-E: Generate mammograms",
-        description="Generate mammograms from text prompts using diffusion models. The generated images are healthy mammograms.",
+        title="Fusion MAM-E: Generate mammograms",
+        description="Generate mammograms using the available options.<br>"  + \
+            "The generated images are healthy mammograms (No lesions).",
     )
 
     iface.queue()
