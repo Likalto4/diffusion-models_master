@@ -49,6 +49,7 @@ def get_normal_BBox(image):
 def main():
     # HP
     folder_name = 'siemens15k'
+    split = 'test'
     resolution = 512
     emergency_stop = None
 
@@ -58,11 +59,11 @@ def main():
     metadata = pd.read_csv(metadata_path)
     # remove rows with "[No Finding]" in 'finding_categories'
     metadata = metadata[metadata['finding_categories'] != "['No Finding']"]
-    # get only images of the training split
-    metadata = metadata[metadata['split'] == 'training']
+    # get only images of the split
+    metadata = metadata[metadata['split'] == split]
     
     # paths
-    name_experiment = f'{folder_name}_real-training_{resolution}'
+    name_experiment = f'{folder_name}_real-{split}_{resolution}'
     new_images_folder_path = repo_path / 'generation/inpainting/data/images'/ name_experiment # where the images are going to
     new_metadata_dir = repo_path  / 'generation/inpainting/data/metadata'
     # create folders if needed
