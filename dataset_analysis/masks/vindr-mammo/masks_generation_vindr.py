@@ -9,14 +9,6 @@ import pandas as pd
 import numpy as np
 from PIL import Image, ImageDraw
 from tqdm import tqdm
-import cv2 as cv
-from torchvision.transforms import (
-    Compose,
-    Resize,
-    CenterCrop,
-    InterpolationMode,
-)
-from matplotlib import pyplot as plt
 
 # HP
 folder_name = 'siemens15k'
