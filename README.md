@@ -7,7 +7,7 @@
 - ### Robert Martí Marly
 
 ## Research group
-- ### Computer Vision and Robotics Institute (VICOROB) of the University of Girona (UdG)
+- ### Computer Vision and Robotics Institute (ViCOROB) of the University of Girona (UdG)
 
 ------------------------------------------------------------------------------------------------------------------------------
 
@@ -18,6 +18,10 @@ This repository contains the code derived from the Master thesis project on mamm
 # Description
 ------------------------------------------------------------------------------------------------------------------------------
 In this work, we propose exploring the use of diffusion models for the generation of high quality full-field digital mammograms using state-of-the-art conditional diffusion pipelines. Additionally, we propose using stable diffusion models for the inpainting of synthetic lesions on healthy mammograms. We introduce \textit{MAM-E}, a pipeline of generative models for high quality mammography synthesis controlled by a text prompt and capable of generating synthetic lesions on specific sections of the breast.
+
+# Main documentation
+------------------------------------------------------------------------------------------------------------------------------
+The report of the project, the slides of the presentation and the poster can be found in the [documentation](https://github.com/Likalto4/diffusion-models_master/tree/main/documentation) folder.
 
 # Set up the environment
 ------------------------------------------------------------------------------------------------------------------------------
