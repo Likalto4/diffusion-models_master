@@ -14,4 +14,8 @@ authors:
     family-names: Montoya-del-Angel
     email: ricardo.montoya.da@gmail.com
     affiliation: University of Girona
+  - given-names: Robert
+    family-names: Martí
+    email: robert.marti@udg.edu
+    affiliation: University of Girona
 repository-code: 'https://github.com/VICTORIA-project/mam-e'
