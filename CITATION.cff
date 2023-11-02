@@ -1,0 +1,17 @@
+# This CITATION.cff file was generated with cffinit.
+# Visit https://bit.ly/cffinit to generate yours today!
+
+cff-version: 1.2.0
+title: >-
+  MAM-E: Mammographic synthetic image generation with
+  diffusion models
+message: >-
+  If you use this software, please cite it using the
+  metadata from this file.
+type: software
+authors:
+  - given-names: Ricardo
+    family-names: Montoya-del-Angel
+    email: ricardo.montoya.da@gmail.com
+    affiliation: University of Girona
+repository-code: 'https://github.com/VICTORIA-project/mam-e'
