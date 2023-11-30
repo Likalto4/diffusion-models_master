@@ -8,7 +8,7 @@ revision: fp16 # str # type of model kept for fp16 optimization
 tokenizer_name: null # str
 # data:
 instance_data_dir: /home/ricardo/master_thesis/diffusion-models_master/data/vindr-mammo/images/siemens15k_RGB_healthy # Mandatory, str
-output_dir: /home/ricardo/master_thesis/diffusion-models_master/results/vindr-siemens_healthy_no-textencoder # Mandatory, str
+output_dir: /home/ricardo/master_thesis/diffusion-models_master/results/vindr-siemens-256 # Mandatory, str
 # hub:
 push_to_hub: true
 hub_token: null
@@ -33,15 +33,15 @@ checkpointing_steps: 1000 # save state every checkpointing_steps
 checkpoints_total_limit: null # limit of total checkpoints to save
 resume_from_checkpoint: null # wheather to resume from checkpoint
 # training:
-seed: 1337 # reproducibility seed # what happends in checkpiting?
+seed: 1337 # reproducibility seed # what happends in checkpointing?
 resolution: 512
 center_crop: false # center or random crop # this is done independenly as preprocessing step
-train_text_encoder: false # train the text encoder
+train_text_encoder: true # train the text encoder
 train_batch_size: 16 # per device
-gradient_accumulation_steps: 8
+gradient_accumulation_steps: 16
 num_train_epochs: 1
-max_train_steps: 2000 # overrides num_train_epochs
-learning_rate: 1.0e-6 # lr after (potential) warmup
+max_train_steps: 2500 # overrides num_train_epochs
+learning_rate: 1.0e-6 # lr after (potential) warmup #standard 1.0e-6
 scale_lr: False #Scale the learning rate by the number of GPUs, gradient accumulation steps, and batch size
 lr_scheduler: constant
 lr_warmup_steps: 0

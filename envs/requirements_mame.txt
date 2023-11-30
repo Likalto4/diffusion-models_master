@@ -1,0 +1,4 @@
+accelerate
+transformers
+diffusers
+wandb
