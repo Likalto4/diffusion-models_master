@@ -8,7 +8,7 @@ revision: fp16 # str # type of model kept for fp16 optimization
 tokenizer_name: null # str
 # data:
 instance_data_dir: /home/ricardo/master_thesis/diffusion-models_master/data/vindr-mammo/images/siemens15k_RGB_healthy # Mandatory, str
-output_dir: /home/ricardo/master_thesis/diffusion-models_master/results/vindr-siemens-256-em7 # Mandatory, str
+output_dir: /home/ricardo/master_thesis/diffusion-models_master/results/vindr-siemens-256-5em6 # Mandatory, str
 # hub:
 push_to_hub: true
 hub_token: null
@@ -41,7 +41,7 @@ train_batch_size: 16 # per device
 gradient_accumulation_steps: 16
 num_train_epochs: 1
 max_train_steps: 2500 # overrides num_train_epochs
-learning_rate: 1.0e-7 # lr after (potential) warmup #standard 1.0e-6
+learning_rate: 5.0e-6 # lr after (potential) warmup #standard 1.0e-6
 scale_lr: False #Scale the learning rate by the number of GPUs, gradient accumulation steps, and batch size
 lr_scheduler: constant
 lr_warmup_steps: 0
