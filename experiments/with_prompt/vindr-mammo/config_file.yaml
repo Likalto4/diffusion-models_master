@@ -7,8 +7,8 @@ revision: fp16 # str # type of model kept for fp16 optimization
 # Pretrained tokenizer name or path if not the same as model_name
 tokenizer_name: null # str
 # data:
-instance_data_dir: /home/ricardo/master_thesis/diffusion-models_master/data/vindr-mammo/images/siemens15k_RGB_healthy # Mandatory, str
-output_dir: /home/ricardo/master_thesis/diffusion-models_master/results/vindr-siemens-256-5em6 # Mandatory, str
+instance_data_dir: /home/ricardo/master_thesis/diffusion-models_master/data/vindr-mammo/images/SIEMENS_8bits_512_training # Mandatory, str
+output_dir: /home/ricardo/master_thesis/diffusion-models_master/results/vindr_training_density # Mandatory, str
 # hub:
 push_to_hub: true
 hub_token: null
@@ -16,7 +16,7 @@ hub_model_id: null # name of the model on the hub (output dir instead)
 # logging:
 logging_dir: logs # log diredctory
 report_to: wandb
-validation_prompt: a mammogram in CC view with high density # validation prompt for logging
+validation_prompt: a mammogram in CC view with low density # validation prompt for logging
 num_validation_images: 4
 validation_steps: 200 # how often to log validation images
 guidance_scale: 4
@@ -37,11 +37,11 @@ seed: 1337 # reproducibility seed # what happends in checkpointing?
 resolution: 512
 center_crop: false # center or random crop # this is done independenly as preprocessing step
 train_text_encoder: true # train the text encoder
-train_batch_size: 16 # per device
-gradient_accumulation_steps: 16
+train_batch_size: 32 # per device
+gradient_accumulation_steps: 8
 num_train_epochs: 1
 max_train_steps: 2500 # overrides num_train_epochs
-learning_rate: 5.0e-6 # lr after (potential) warmup #standard 1.0e-6
+learning_rate: 1.0e-6 # lr after (potential) warmup #standard 1.0e-6
 scale_lr: False #Scale the learning rate by the number of GPUs, gradient accumulation steps, and batch size
 lr_scheduler: constant
 lr_warmup_steps: 0
