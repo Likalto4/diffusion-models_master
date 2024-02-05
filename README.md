@@ -2,7 +2,7 @@
 
 ------------------------------------------------------------------------------------------------------------------------------
 > ## Running GUI
->Access our GUI for the inference of the models [here](https://0919d7f10de774e842.gradio.live/)!<br>
+>Access our GUI for the inference of the models [here](https://bafbc1bd15d6fdc843.gradio.live/)!<br>
 >>Note: The availability of the GUI is not guaranteed 24/7.
 
 ## Main contributors
