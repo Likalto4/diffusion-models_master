@@ -29,7 +29,7 @@ dill==0.3.6
 docker-pycreds==0.4.0
 entrypoints==0.4
 executing==1.2.0
-fastapi==0.94.1
+fastapi==0.109.1
 ffmpy==0.3.0
 filelock==3.10.0
 flit_core @ file:///opt/conda/conda-bld/flit-core_1644941570762/work/source/flit_core
