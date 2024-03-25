@@ -1,10 +1,13 @@
 # MAM-E: Mammographic synthetic image generation with diffusion models
 
 ------------------------------------------------------------------------------------------------------------------------------
+> ## Running GUI
+>Access our GUI for the inference of the models [here](https://f07462107e6868080b.gradio.live/)!<br>
+>>Note: The availability of the GUI is not guaranteed 24/7.
 
 ## Main contributors
-- ### Ricardo Montoya del Ángel
-- ### Robert Martí Marly
+- ### Ricardo Montoya-del-Angel
+- ### Robert Martí
 
 ## Research group
 - ### Computer Vision and Robotics Institute (ViCOROB) of the University of Girona (UdG)
@@ -17,7 +20,7 @@ This repository contains the code derived from the Master thesis project on mamm
 
 # Description
 ------------------------------------------------------------------------------------------------------------------------------
-In this work, we propose exploring the use of diffusion models for the generation of high quality full-field digital mammograms using state-of-the-art conditional diffusion pipelines. Additionally, we propose using stable diffusion models for the inpainting of synthetic lesions on healthy mammograms. We introduce \textit{MAM-E}, a pipeline of generative models for high quality mammography synthesis controlled by a text prompt and capable of generating synthetic lesions on specific sections of the breast.
+In this work, we propose exploring the use of diffusion models for the generation of high quality full-field digital mammograms using state-of-the-art conditional diffusion pipelines. Additionally, we propose using stable diffusion models for the inpainting of synthetic lesions on healthy mammograms. We introduce MAM-E, a pipeline of generative models for high quality mammography synthesis controlled by a text prompt and capable of generating synthetic lesions on specific sections of the breast.
 
 # Main documentation
 ------------------------------------------------------------------------------------------------------------------------------
