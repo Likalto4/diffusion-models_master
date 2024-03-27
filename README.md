@@ -1,10 +1,13 @@
 # MAM-E: Mammographic synthetic image generation with diffusion models
 
 ------------------------------------------------------------------------------------------------------------------------------
+> ## Running GUI
+>Access our GUI for the inference of the models [here](https://f07462107e6868080b.gradio.live/)!<br>
+>>Note: The availability of the GUI is not guaranteed 24/7.
 
 ## Main contributors
-- ### Ricardo Montoya del Ángel
-- ### Robert Martí Marly
+- ### Ricardo Montoya-del-Angel
+- ### Robert Martí
 
 ## Research group
 - ### Computer Vision and Robotics Institute (ViCOROB) of the University of Girona (UdG)
@@ -17,11 +20,13 @@ This repository contains the code derived from the Master thesis project on mamm
 
 # Description
 ------------------------------------------------------------------------------------------------------------------------------
-In this work, we propose exploring the use of diffusion models for the generation of high quality full-field digital mammograms using state-of-the-art conditional diffusion pipelines. Additionally, we propose using stable diffusion models for the inpainting of synthetic lesions on healthy mammograms. We introduce \textit{MAM-E}, a pipeline of generative models for high quality mammography synthesis controlled by a text prompt and capable of generating synthetic lesions on specific sections of the breast.
+In this work, we propose exploring the use of diffusion models for the generation of high quality full-field digital mammograms using state-of-the-art conditional diffusion pipelines. Additionally, we propose using stable diffusion models for the inpainting of synthetic lesions on healthy mammograms. We introduce *MAM-E*, a pipeline of generative models for high quality mammography synthesis controlled by a text prompt and capable of generating synthetic lesions on specific sections of the breast.
 
 # Main documentation
 ------------------------------------------------------------------------------------------------------------------------------
-The report of the project, the slides of the presentation and the poster can be found in the [documentation](https://github.com/Likalto4/diffusion-models_master/tree/main/documentation) folder.
+The paper of this project can be found here: [MAM-E: Mammographic Synthetic Image Generation with Diffusion Models](https://www.mdpi.com/1424-8220/24/7/2076).<br>
+
+Additionally, the report of the project, the slides of the presentation and the poster can be found in the [documentation](https://github.com/Likalto4/diffusion-models_master/tree/main/documentation) folder.
 
 # Set up the environment
 ------------------------------------------------------------------------------------------------------------------------------
@@ -60,3 +65,22 @@ The repository is structured as follows:
 - figures: contains the figures used in the README.
 - generation (future work): for the use of synthetic images in the training of CAD systems.
 - results (not included in the repository): contains the weights, pipeline configuration files and some logging files for the experiments. (The same information can be found in the Hugging Face repository of the first author).
+
+# Citation
+
+If you find this project useful, please consider citing it:
+
+```
+@Article{s24072076,
+AUTHOR = {Montoya-del-Angel, Ricardo and Sam-Millan, Karla and Vilanova, Joan C. and Martí, Robert},
+TITLE = {MAM-E: Mammographic Synthetic Image Generation with Diffusion Models},
+JOURNAL = {Sensors},
+VOLUME = {24},
+YEAR = {2024},
+NUMBER = {7},
+ARTICLE-NUMBER = {2076},
+URL = {https://www.mdpi.com/1424-8220/24/7/2076},
+ISSN = {1424-8220},
+DOI = {10.3390/s24072076}
+}
+```
