@@ -19,7 +19,7 @@ from gradio import Interface
 
 def main():
     # define model and load weights
-    model_dir='Likalto4/lesion-inpainting_trials'
+    model_dir='Likalto4/mammo40k_healthy-lesion'
     pipe = DiffusionPipeline.from_pretrained(
         model_dir,
         safety_checker=None,

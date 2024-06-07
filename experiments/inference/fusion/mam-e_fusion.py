@@ -6,8 +6,6 @@ while '.gitignore' not in os.listdir(repo_path): # while not in the root of the 
     repo_path = repo_path.parent #go up one level
 sys.path.insert(0,str(repo_path)) if str(repo_path) not in sys.path else None
 
-print(f'Added {str(repo_path)} to the system path')
-
 os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"   # see issue #152
 os.environ["CUDA_VISIBLE_DEVICES"]="0"
 
