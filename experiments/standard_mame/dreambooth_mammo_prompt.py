@@ -14,7 +14,7 @@ sys.path.insert(0,str(repo_path)) if str(repo_path) not in sys.path else None
 exp_path = Path.cwd().resolve() # experiment path
 # visible GPUs
 os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"]="1"
+os.environ["CUDA_VISIBLE_DEVICES"]="0"
 
 import argparse
 import yaml
@@ -79,7 +79,7 @@ def log_validation(text_encoder, tokenizer, unet, vae, args, accelerator, weight
         tokenizer=tokenizer,
         unet=accelerator.unwrap_model(unet),
         vae=vae,
-        revision=args.revision,
+        variant=args.revision,
         torch_dtype=weight_dtype,
         safety_checker=None,
     )
@@ -124,10 +124,10 @@ def import_model_class_from_model_name_or_path(pretrained_model_name_or_path: st
         from transformers import CLIPTextModel
 
         return CLIPTextModel
-    elif model_class == "RobertaSeriesModelWithTransformation":
-        from diffusers.pipelines.alt_diffusion.modeling_roberta_series import RobertaSeriesModelWithTransformation
+    # elif model_class == "RobertaSeriesModelWithTransformation":
+    #     from diffusers.pipelines.alt_diffusion.modeling_roberta_series import RobertaSeriesModelWithTransformation
 
-        return RobertaSeriesModelWithTransformation
+    #     return RobertaSeriesModelWithTransformation
     else:
         raise ValueError(f"{model_class} is not supported.")
 
@@ -203,7 +203,7 @@ def main():
         gradient_accumulation_steps=args.gradient_accumulation_steps,
         mixed_precision=args.mixed_precision, 
         log_with=args.report_to, # logger (tb or wandb)
-        logging_dir=logging_dir, # defined above
+        project_dir=logging_dir, # defined above
         project_config=accelerator_project_config, # project config defined above
     )
 

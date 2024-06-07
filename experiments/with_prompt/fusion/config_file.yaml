@@ -1,7 +1,7 @@
 # settings:
 # gpu_num: 1
 # pretrained_model_name_or_path: runwayml/stable-diffusion-v1-5 #Mandatory, str
-pretrained_model_name_or_path: stabilityai/stable-diffusion-2-1-base
+pretrained_model_name_or_path: stabilityai/stable-diffusion-2-base
 pretrained_vae_name_or_path: null # str # no face VAE for mammography
 # version of the model to use
 revision: fp16 # str # type of model kept for fp16 optimization
