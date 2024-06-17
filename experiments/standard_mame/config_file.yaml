@@ -8,7 +8,7 @@ revision: fp16 # str # type of model kept for fp16 optimization
 tokenizer_name: null # str
 # data:
 instance_data_dir: /home/ricardo/Documents/PhD/projects/diffusion-models_master/data/images/breast40k_RGB_healthy # Mandatory, str
-output_dir: /home/ricardo/Documents/PhD/projects/diffusion-models_master/results/sd-v2-base_OPTIMAM # Mandatory, str <------------
+output_dir: /home/ricardo/Documents/PhD/projects/diffusion-models_master/results/sd-v2-base_OPTIMAM_256 # Mandatory, str <------------
 # hub:
 push_to_hub: true
 hub_token: null
@@ -40,7 +40,7 @@ resolution: 512
 center_crop: false # center or random crop # this is done independenly as preprocessing step
 train_text_encoder: true # train the text encoder
 train_batch_size: 16 # per device
-gradient_accumulation_steps: 4
+gradient_accumulation_steps: 16
 learning_rate: 1.0e-6 # lr after (potential) warmup
 scale_lr: False #Scale the learning rate by the number of GPUs, gradient accumulation steps, and batch size
 lr_scheduler: constant
