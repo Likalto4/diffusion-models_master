@@ -14,7 +14,7 @@ sys.path.insert(0,str(repo_path)) if str(repo_path) not in sys.path else None
 exp_path = Path.cwd().resolve() # experiment path
 # visible GPUs
 os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"]="1"
+os.environ["CUDA_VISIBLE_DEVICES"]="0"
 
 import argparse
 import yaml

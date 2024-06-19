@@ -14,7 +14,7 @@ sys.path.insert(0,str(repo_path)) if str(repo_path) not in sys.path else None
 exp_path = Path.cwd().resolve() # experiment path
 # visible GPUs
 os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"]="1"
+os.environ["CUDA_VISIBLE_DEVICES"]="0"
 
 import argparse
 import yaml
@@ -203,7 +203,7 @@ def main():
         gradient_accumulation_steps=args.gradient_accumulation_steps,
         mixed_precision=args.mixed_precision, 
         log_with=args.report_to, # logger (tb or wandb)
-        logging_dir=logging_dir, # defined above
+        project_dir=logging_dir, # defined above
         project_config=accelerator_project_config, # project config defined above
     )
 

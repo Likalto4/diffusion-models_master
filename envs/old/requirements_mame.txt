@@ -1,0 +1,9 @@
+# on top of a python 3.10 conda env
+# with a conda installed pytorch # xformers installs its own version of pytorch...better use pure pip
+
+accelerate
+transformers
+diffusers
+datasets
+# xformers --no-dependencies
+wandb
