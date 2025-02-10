@@ -10,3 +10,4 @@ diffusers
 datasets
 wandb
 bitsandbytes
+torchvision
