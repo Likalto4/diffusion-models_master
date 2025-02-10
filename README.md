@@ -28,25 +28,56 @@ The paper of this project can be found here: [MAM-E: Mammographic Synthetic Imag
 
 Additionally, the report of the project, the slides of the presentation and the poster can be found in the [documentation](https://github.com/Likalto4/diffusion-models_master/tree/main/documentation) folder.
 
-# Set up the environment
+# Set up the environment (upadted 2025)
 ------------------------------------------------------------------------------------------------------------------------------
-Two versions of the environment are provided. The first one is a conda environment which can be installed with:
+To install the necessary packages, we suggest the following instructions:
+
+1. Create conda environment:
 
 ```bash 
-conda env create -f dreambooth.yml
-conda activate dreambooth
+conda create -n mame_new python=3.10
+conda activate mame_new
 ```
 
-Attention: several packages are not available in conda and need to be installed via pip.
-The packages in question are mainly Hugging Face's and should be installed from source using:
+2. Install the necessary packages using pip.
+- We suggest starting with xformers (if you are oging to use it) as it requires installing its own torch version.
     
 ```bash
-pip install git+https://github.com/huggingface/transformers
+pip install xformers
 ```
+
+- The, install all the other pip packages using the requirements file.
+
+```bash
+pip install -r envs/requirements_mame.txt
+```
+
 
 Refer to the [Hugging Face documentation](https://huggingface.co/transformers/installation.html) for more information.
 
-For a more clear insight of the specific pip packages needed, refer to the dreambooth_requirements.txt file.
+# Running the code
+------------------------------------------------------------------------------------------------------------------------------
+
+Here is a brief description on how to run an experiment for the "fusion model".
+
+1. Go to the experiment folder:
+
+```bash
+cd experiments/with_prompt/fusion
+```
+
+2. Edit the configuration file to set the desired parameters. For example, you can change the number of epochs, the batch size, the learning rate, etc.
+- It is important to define the data location and the results directory in the configuration file.
+- For special configuration settings (e.g. xformer usage, wandb logging, etc.), refer to the corresponding documentation.
+
+3. Run the experiment:
+    
+```bash
+python fusion_prompt.py
+```
+
+Note: The fusion model using batch size of 16 (with variable graident accumulation steps), 512x512 image, with xformers activated, 8 bit adam, gradient checkpointing and fp16 mixed precision training, requires around 20GB of GPU memory.
+
 
 # Repository structure
 ------------------------------------------------------------------------------------------------------------------------------
@@ -54,6 +85,8 @@ For a more clear insight of the specific pip packages needed, refer to the dream
 The repository is structured as follows:
 - assessment: code for qualitative and quantitative assessment of the generated images.
 - data (not included in the repository): contains the data used for training the models.
+    - The training data location as well as the results directory are be defined in the configuration file.
+    - This means you can have virtually any directory structure that you want for your data.
 - dataset_analysis: code for the analysis of the dataset. This includes constructing the dataset metadata, saving png files, creating masks, prompt, etc.
 - datasets_local: contains useful functions for the dataset creation.
 - envs: contains the conda and pip environment files.

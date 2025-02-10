@@ -8,8 +8,8 @@ revision: fp16 # str # type of model kept for fp16 optimization
 # Pretrained tokenizer name or path if not the same as model_name
 tokenizer_name: null # str
 # data:
-instance_data_dir: /home/ricardo/master_thesis/diffusion-models_master/data/fusion/images/RGB_healthy # Mandatory, str
-output_dir: /home/ricardo/master_thesis/diffusion-models_master/results/fusion_2-1-base # Mandatory, str
+instance_data_dir: /home/ricardo/Documents/PhD/fixed/diffusion-models_master/data/fusion/images/RGB_healthy # Mandatory, str
+output_dir: /home/ricardo/Documents/PhD/fixed/diffusion-models_master/results/trial # Mandatory, str
 # hub:
 push_to_hub: true
 hub_token: null
