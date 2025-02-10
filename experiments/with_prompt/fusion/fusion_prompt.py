@@ -446,11 +446,9 @@ def main():
     )
 
     # Dataset and DataLoaders creation:
-    data_files = {}
-    data_files["train"] = os.path.join(args.instance_data_dir, "**")
     dataset = load_dataset(
         "imagefolder",
-        data_files=data_files,
+        data_dir=args.instance_data_dir,
     )
     column_names = dataset["train"].column_names
     image_column = column_names[0]
