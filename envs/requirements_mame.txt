@@ -2,12 +2,11 @@
 
 # xformers installs its own version of pytorch, so I suggest installing xformers first
 xformers
+torchvision
 
-# other pip installations
+# other pip installations availabe in conda forge but dependable on torch
 accelerate
 transformers
 diffusers
 datasets
-wandb
 bitsandbytes
-torchvision

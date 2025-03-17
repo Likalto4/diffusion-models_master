@@ -35,12 +35,18 @@ To install the necessary packages, we suggest the following instructions:
 1. Create conda environment:
 
 ```bash 
-conda create -n mame_new python=3.10
-conda activate mame_new
+conda create -n mame python=3.11 ipykernel pip-autoremove
+conda activate mame
 ```
 
-2. Install the necessary packages using pip.
-- We suggest starting with xformers (if you are oging to use it) as it requires installing its own torch version.
+2. Install basic packages using mamba:
+
+```bash
+mamba install numpy pandas matplotlib pillow
+```
+
+3. Install the rest of the necessary packages using pip.
+- We suggest starting with xformers (if you are going to use it) as it requires installing its own torch version. This is to avoid torch version conflicts.
     
 ```bash
 pip install xformers

@@ -1,0 +1,24 @@
+name: mame
+channels:
+  - conda-forge
+dependencies:
+  # base
+  - python=3.11
+  - ipykernel
+  - pip-autoremove
+  - pytorch
+  - xformers
+  - torchvision
+  # basic
+  - numpy
+  - pandas
+  - matplotlib
+  - pillow
+  - wandb
+  # Hugging Face
+  - accelerate
+  - datasets
+  - transformers
+  - diffusers
+
+# - bitsandbytes # install individually
