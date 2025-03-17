@@ -15,7 +15,6 @@ repo_path= Path.cwd().resolve()
 while '.gitignore' not in os.listdir(repo_path): # while not in the root of the repo
     repo_path = repo_path.parent #go up one level
 sys.path.insert(0,str(repo_path)) if str(repo_path) not in sys.path else None
-exp_path = Path.cwd().resolve() # experiment path
 
 # visible GPUs
 os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
@@ -60,13 +59,26 @@ from diffusers.utils.import_utils import is_xformers_available
 import random
 import setproctitle
 
-
+# preliminars
 if is_wandb_available():
     import wandb
 
 logger = get_logger(__name__)
 # set process title for gpu name
 setproctitle.setproctitle("mame_fusion")
+
+def load_config(config_path:Path): 
+    """Get args namespace from yaml configuration file
+
+    Args:
+        config_path (Path): path to the yaml configuration file
+
+    Returns:
+        argparse.Namespace: namespace args with the configuration
+    """
+    with open(config_path) as file:
+        config = yaml.load(file, Loader=yaml.FullLoader)
+    return argparse.Namespace(**config)
 
 
 def log_validation(text_encoder, tokenizer, unet, vae, args, accelerator, weight_dtype, epoch, guidance_scale=7.5):
@@ -192,22 +204,21 @@ def get_full_repo_name(model_id: str, organization: Optional[str] = None, token:
 
 
 def main():
-    # get the dir of this python file
-    dir_path = Path(__file__).parent
     # read and set config file
-    config_path = dir_path / 'config_file.yaml' # configuration file path (beter to call it from the args parser)
-    with open(config_path) as file: # expects the config file to be in the same directory
-        config = yaml.load(file, Loader=yaml.FullLoader)
-    args = argparse.Namespace(**config) # parse the config file
-    
-    logging_dir = Path(args.output_dir, args.logging_dir) # path for logging
+    config_path = Path(__file__).parent / 'config_file.yaml'
+    args = load_config(config_path)
 
+    # relativize args paths
+    args.project_dir = repo_path / args.project_dir
+    args.instance_data_dir = repo_path / args.instance_data_dir
+
+    # Accelerator setup
     accelerator_project_config = ProjectConfiguration(total_limit=args.checkpoints_total_limit)
     accelerator = Accelerator( # start accelerator
         gradient_accumulation_steps=args.gradient_accumulation_steps,
         mixed_precision=args.mixed_precision, 
         log_with=args.report_to, # logger (tb or wandb)
-        project_dir=logging_dir, # defined above
+        project_dir=args.project_dir, # defined above
         project_config=accelerator_project_config, # project config defined above
     )
 
@@ -298,19 +309,19 @@ def main():
     if accelerator.is_main_process:
         if args.push_to_hub:
             if args.hub_model_id is None:
-                repo_name = get_full_repo_name(Path(args.output_dir).name, token=args.hub_token)
+                repo_name = get_full_repo_name(Path(args.project_dir).name, token=args.hub_token)
             else:
                 repo_name = args.hub_model_id
             create_repo(repo_name, exist_ok=True, token=args.hub_token)
-            repo = Repository(args.output_dir, clone_from=repo_name, token=args.hub_token)
+            repo = Repository(args.project_dir, clone_from=repo_name, token=args.hub_token)
 
-            with open(os.path.join(args.output_dir, ".gitignore"), "w+") as gitignore:
+            with open(os.path.join(args.project_dir, ".gitignore"), "w+") as gitignore:
                 if "step_*" not in gitignore:
                     gitignore.write("step_*\n")
                 if "epoch_*" not in gitignore:
                     gitignore.write("epoch_*\n")
-        elif args.output_dir is not None: # create output directory if it doesn't exist
-            os.makedirs(args.output_dir, exist_ok=True)
+        elif args.project_dir is not None: # create output directory if it doesn't exist
+            os.makedirs(args.project_dir, exist_ok=True)
 
     # Load the tokenizer
     if args.tokenizer_name:
@@ -452,7 +463,7 @@ def main():
     # Dataset and DataLoaders creation:
     dataset = load_dataset(
         "imagefolder",
-        data_dir=args.instance_data_dir,
+        data_dir= args.instance_data_dir,
     )
     column_names = dataset["train"].column_names
     image_column = column_names[0]
@@ -592,9 +603,11 @@ def main():
         run = os.path.split(__file__)[-1].split(".")[0]
         accelerator.init_trackers(run, config=vars(args)) # add args to wandb
         wandb.save(str(config_path)) if args.report_to=="wandb" else None
-        dataset_metadata_path = os.path.join(args.instance_data_dir, "metadata.jsonl") # save metadata
-        print(f"Saving dataset metadata in {dataset_metadata_path}")
-        wandb.save(str(dataset_metadata_path)) if args.report_to=="wandb" else None
+
+        # save metadata file in wandb
+        # dataset_metadata_path = repo_path / args.instance_data_dir / "metadata.jsonl" 
+        # print(f"Saving dataset metadata in {dataset_metadata_path}")
+        # wandb.save(str(dataset_metadata_path)) if args.report_to=="wandb" else None
 
     # Train!
     total_batch_size = args.train_batch_size * accelerator.num_processes * args.gradient_accumulation_steps
@@ -616,7 +629,7 @@ def main():
             path = os.path.basename(args.resume_from_checkpoint)
         else:
             # Get the mos recent checkpoint
-            dirs = os.listdir(args.output_dir)
+            dirs = os.listdir(args.project_dir)
             dirs = [d for d in dirs if d.startswith("checkpoint")]
             dirs = sorted(dirs, key=lambda x: int(x.split("-")[1]))
             path = dirs[-1] if len(dirs) > 0 else None
@@ -628,7 +641,7 @@ def main():
             args.resume_from_checkpoint = None
         else:
             accelerator.print(f"Resuming from checkpoint {path}")
-            accelerator.load_state(os.path.join(args.output_dir, path))
+            accelerator.load_state(os.path.join(args.project_dir, path))
             global_step = int(path.split("-")[1])
 
             resume_global_step = global_step * args.gradient_accumulation_steps
@@ -715,7 +728,7 @@ def main():
 
                 if accelerator.is_main_process:
                     if global_step % args.checkpointing_steps == 0: # checkpointing
-                        save_path = os.path.join(args.output_dir, f"checkpoint-{global_step}")
+                        save_path = os.path.join(args.project_dir, f"checkpoint-{global_step}")
                         accelerator.save_state(save_path)
                         logger.info(f"Saved state to {save_path}")
 
@@ -745,7 +758,7 @@ def main():
             safety_checker=None,
             revision=args.revision,
         )
-        pipeline.save_pretrained(args.output_dir)
+        pipeline.save_pretrained(args.project_dir)
 
         if args.push_to_hub:
             logger.info("Pushing to the hub...")
