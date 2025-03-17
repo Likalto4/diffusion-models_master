@@ -549,7 +549,7 @@ def main():
         collate_fn=collate_fn,
         batch_size=args.train_batch_size,
         num_workers=args.dataloader_num_workers,
-        drop_last=args.drop_last,
+        drop_last=args.dataloader_drop_last,
     )
 
     # Scheduler and math around the number of training steps.
@@ -686,7 +686,7 @@ def main():
                 model_pred = unet(noisy_latents, timesteps, encoder_hidden_states).sample
 
                 # Get the target for loss depending on the prediction type
-                if noise_scheduler.config.prediction_type == "epsilon":
+                if noise_scheduler.config.prediction_type == "epsilon": # this is the default
                     target = noise
                 elif noise_scheduler.config.prediction_type == "v_prediction":
                     target = noise_scheduler.get_velocity(latents, noise, timesteps)
@@ -710,7 +710,7 @@ def main():
                     loss = F.mse_loss(model_pred.float(), target.float(), reduction="mean")
 
                 accelerator.backward(loss)
-                if accelerator.sync_gradients: # clip gradients seperately, as they cannot be clipped together
+                if accelerator.sync_gradients:
                     params_to_clip = (
                         itertools.chain(unet.parameters(), text_encoder.parameters())
                         if args.train_text_encoder

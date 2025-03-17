@@ -21,7 +21,7 @@ hub_model_id: null # name of the model on the hub (output dir instead)
 report_to: wandb
 validation_prompt: a siemens mammogram in MLO view with high density and small area # validation prompt for logging
 num_validation_images: 4
-validation_steps: 10 # how often to log validation images
+validation_steps: 5 # how often to log validation images
 guidance_scale: 4
 
 # CHECKPOINTING
@@ -30,28 +30,32 @@ checkpoints_total_limit: null # limit of total checkpoints to save
 resume_from_checkpoint: latest # wheather to resume from checkpoint
 
 # TRAINING
-seed: 1337 # reproducibility seed # what happends in checkpiting?
-resolution: 512
-center_crop: false # center or random crop # this is done independenly as preprocessing step
-train_text_encoder: true # train the text encoder
 train_batch_size: 16 # per device
-gradient_accumulation_steps: 16
+gradient_accumulation_steps: 16 # total batch size = train_batch_size * gradient_accumulation_steps
 num_train_epochs: 1
 max_train_steps: 4000 # overrides num_train_epochs
+train_text_encoder: true
+dataloader_num_workers: 8
+dataloader_drop_last: true
+# learning rate settings
 learning_rate: 1.0e-6 # lr after (potential) warmup
-scale_lr: False #Scale the learning rate by the number of GPUs, gradient accumulation steps, and batch size
 lr_scheduler: constant
 lr_warmup_steps: 0
 lr_num_cycles: 1 #Number of hard resets of the lr in cosine_with_restarts scheduler
 lr_power: 1.0 #Power of the polynomial scheduler
+scale_lr: False # Scale the learning rate by the number of GPUs, gradient accumulation steps, and batch size
+# preprocessing
+resolution: 512
+center_crop: false # center or random crop # this is done independenly as preprocessing step
 # optimizer
-dataloader_num_workers: 8
-drop_last: true
 adam_beta1: 0.9
 adam_beta2: 0.999
 adam_weight_decay: 1.0e-2
 adam_epsilon: 1.0e-8
-max_grad_norm: 1.0 # gradient clipping
+# gradient clipping
+max_grad_norm: 1.0
+# reproducibility
+seed: 1337 # what happens when checkpointing?
 
 # MEMORY EFFICIENT TRAINING
 allow_tf32: true # on Ampere GPU only
