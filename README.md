@@ -57,19 +57,14 @@ You may also install all the libraries using other environment managers, like pi
 
 Here is a brief description on how to run an experiment for the "fusion model".
 
-1. Go to the experiment folder:
-
-```bash
-cd experiments/with_prompt/fusion
-```
-
-2. Edit the configuration file to set the desired parameters. For example, you can change the number of epochs, the batch size, the learning rate, etc.
-- It is important to define the data location and the results directory in the configuration file.
+1. Edit the configuration file to set the desired parameters. For example, you can change the number of epochs, the batch size, the learning rate, etc.
+- It is important to define the training data location and the name of the experiment (which will be saved in the repo_path/results directory).
 - For special configuration settings (e.g. xformer usage, wandb logging, etc.), refer to the corresponding documentation.
 
-3. Run the experiment:
+2. Run the experiment:
     
 ```bash
+cd experiments/with_prompt/fusion
 python fusion_prompt.py
 ```
 
