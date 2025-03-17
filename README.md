@@ -49,9 +49,9 @@ mamba install bitsandbytes -c conda-forge
 
 This is done because the bitsandbytes library may try to install the pytorch cpu version if included in the requirements file.
 
-## Additional notes
+## Using other environment managers
 
-You may also install all the libraries using other environment managers, like pip. Just open the yaml file, explore the libraries and install them using pip.
+You may also install all the libraries using other environment managers, like pip. Just open the yaml file, explore the libraries and install them using your prefered manager.
 # Running the code
 ------------------------------------------------------------------------------------------------------------------------------
 

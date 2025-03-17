@@ -4,7 +4,11 @@
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 
-#Add repo path to the system path
+# TODO
+# - Check RobertaSeriesModelWithTransformation
+
+# Add repo path to the system path
+# make sure you are working inside a git repo!
 from pathlib import Path
 import os, sys
 repo_path= Path.cwd().resolve()
@@ -12,6 +16,7 @@ while '.gitignore' not in os.listdir(repo_path): # while not in the root of the 
     repo_path = repo_path.parent #go up one level
 sys.path.insert(0,str(repo_path)) if str(repo_path) not in sys.path else None
 exp_path = Path.cwd().resolve() # experiment path
+
 # visible GPUs
 os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
 os.environ["CUDA_VISIBLE_DEVICES"]="0"
@@ -22,8 +27,6 @@ import hashlib
 import itertools
 import logging
 import math
-# import warnings
-from pathlib import Path
 from typing import Optional
 
 import accelerate
@@ -37,7 +40,6 @@ from accelerate.logging import get_logger
 from accelerate.utils import ProjectConfiguration, set_seed
 from huggingface_hub import HfFolder, Repository, create_repo, whoami
 from packaging import version
-from PIL import Image
 from torch.utils.data import Dataset
 from torchvision import transforms
 from tqdm.auto import tqdm
@@ -52,19 +54,19 @@ from diffusers import (
     UNet2DConditionModel,
     DDIMScheduler,
 )
-import random
 from diffusers.optimization import get_scheduler
-from diffusers.utils import check_min_version, is_wandb_available
+from diffusers.utils import is_wandb_available
 from diffusers.utils.import_utils import is_xformers_available
+import random
+import setproctitle
 
 
 if is_wandb_available():
     import wandb
 
-# Will error if the minimal version of diffusers is not installed. Remove at your own risks.
-check_min_version("0.15.0.dev0")
-
 logger = get_logger(__name__)
+# set process title for gpu name
+setproctitle.setproctitle("mame_fusion")
 
 
 def log_validation(text_encoder, tokenizer, unet, vae, args, accelerator, weight_dtype, epoch, guidance_scale=7.5):
