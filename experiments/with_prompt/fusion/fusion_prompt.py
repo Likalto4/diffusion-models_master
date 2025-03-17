@@ -7,8 +7,7 @@
 # TODO
 # - Check RobertaSeriesModelWithTransformation
 
-# Add repo path to the system path
-# make sure you are working inside a git repo!
+# Add repo path to the system path # make sure you are working inside a git repo!
 from pathlib import Path
 import os, sys
 repo_path= Path.cwd().resolve()
@@ -53,19 +52,15 @@ from diffusers import (
     UNet2DConditionModel,
     DDIMScheduler,
 )
+import random
+import setproctitle
 from diffusers.optimization import get_scheduler
 from diffusers.utils import is_wandb_available
 from diffusers.utils.import_utils import is_xformers_available
-import random
-import setproctitle
-
-# preliminars
 if is_wandb_available():
     import wandb
 
 logger = get_logger(__name__)
-# set process title for gpu name
-setproctitle.setproctitle("mame_fusion")
 
 def load_config(config_path:Path): 
     """Get args namespace from yaml configuration file
@@ -208,8 +203,11 @@ def main():
     config_path = Path(__file__).parent / 'config_file.yaml'
     args = load_config(config_path)
 
+    # set process title for gpu name
+    setproctitle.setproctitle(args.process_name)
+
     # relativize args paths
-    args.project_dir = repo_path / args.project_dir
+    args.project_dir = repo_path / 'results' / args.project_name
     args.instance_data_dir = repo_path / args.instance_data_dir
 
     # Accelerator setup
