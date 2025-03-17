@@ -190,8 +190,10 @@ def get_full_repo_name(model_id: str, organization: Optional[str] = None, token:
 
 
 def main():
+    # get the dir of this python file
+    dir_path = Path(__file__).parent
     # read and set config file
-    config_path = 'config_file.yaml' # configuration file path (beter to call it from the args parser)
+    config_path = dir_path / 'config_file.yaml' # configuration file path (beter to call it from the args parser)
     with open(config_path) as file: # expects the config file to be in the same directory
         config = yaml.load(file, Loader=yaml.FullLoader)
     args = argparse.Namespace(**config) # parse the config file

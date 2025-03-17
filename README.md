@@ -30,37 +30,28 @@ Additionally, the report of the project, the slides of the presentation and the 
 
 # Set up the environment (upadted 2025)
 ------------------------------------------------------------------------------------------------------------------------------
-To install the necessary packages, we suggest the following instructions:
+To create the mame environment we suggest mamba/conda using our yaml file:
 
 1. Create conda environment:
 
 ```bash 
-conda create -n mame python=3.11 ipykernel pip-autoremove
-conda activate mame
+mamba env create -f envs/requirements_mamba.yaml
+mamba activate mame
 ```
 
-2. Install basic packages using mamba:
+This will create a conda environment named `mame`. Before creating it, make sure that the cuda version of pytorch is being installed.
+
+2. After activating the environment, install the bitsandbytes library individually:
 
 ```bash
-mamba install numpy pandas matplotlib pillow
+mamba install bitsandbytes -c conda-forge 
 ```
 
-3. Install the rest of the necessary packages using pip.
-- We suggest starting with xformers (if you are going to use it) as it requires installing its own torch version. This is to avoid torch version conflicts.
-    
-```bash
-pip install xformers
-```
+This is done because the bitsandbytes library may try to install the pytorch cpu version if included in the requirements file.
 
-- The, install all the other pip packages using the requirements file.
+## Additional notes
 
-```bash
-pip install -r envs/requirements_mame.txt
-```
-
-
-Refer to the [Hugging Face documentation](https://huggingface.co/transformers/installation.html) for more information.
-
+You may also install all the libraries using other environment managers, like pip. Just open the yaml file, explore the libraries and install them using pip.
 # Running the code
 ------------------------------------------------------------------------------------------------------------------------------
 
