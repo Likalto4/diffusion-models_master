@@ -203,8 +203,11 @@ def main():
     config_path = Path(__file__).parent / 'config_file.yaml'
     args = load_config(config_path)
 
+    # define project name
+    args.project_name = Path(args.pretrained_model_name_or_path).stem + f'_{args.project_id}'
+    
     # set process title for gpu name
-    setproctitle.setproctitle(args.process_name)
+    setproctitle.setproctitle(args.project_name)
 
     # relativize args paths
     args.project_dir = repo_path / 'results' / args.project_name
@@ -598,8 +601,7 @@ def main():
     # We need to initialize the trackers we use, and also store our configuration.
     # The trackers initializes automatically on the main process.
     if accelerator.is_main_process:
-        run = os.path.split(__file__)[-1].split(".")[0]
-        accelerator.init_trackers(run, config=vars(args)) # add args to wandb
+        accelerator.init_trackers(args.log_name, config=vars(args)) # add args to wandb
         wandb.save(str(config_path)) if args.report_to=="wandb" else None
 
         # save metadata file in wandb

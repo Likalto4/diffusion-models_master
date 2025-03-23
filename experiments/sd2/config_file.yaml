@@ -1,12 +1,12 @@
 # NAME
-project_name: stable-diffusion-2-1-base_fusion # str # directory to save the model weights and logs (HF repo)
-process_name: sd2-1-mame:fusion
+project_id: fusion # written on top of the pretrained_name: model_(project_name)
+logging_name: fusion_prompt # for logger (e.g. wandb)
 
 # DATA
 instance_data_dir: data/fusion/images/RGB_healthy # Mandatory, str
 
 # MODEL
-pretrained_model_name_or_path: stabilityai/stable-diffusion-2-1-base # other: runwayml/stable-diffusion-v1-5 #Mandatory, str
+pretrained_model_name_or_path: stabilityai/stable-diffusion-2-1 # other: runwayml/stable-diffusion-v1-5 #Mandatory, str
 pretrained_vae_name_or_path: null # str # no face VAE for mammography
 revision: fp16 # str # version of the model to use
 tokenizer_name: null # str # Pretrained tokenizer name or path if not the same as model_name
