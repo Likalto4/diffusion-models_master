@@ -6,6 +6,7 @@ dependencies:
   - python=3.11
   - ipykernel
   - pip-autoremove
+  # cuda-related
   - pytorch
   - xformers
   - torchvision

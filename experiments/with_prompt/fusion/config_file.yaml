@@ -1,13 +1,12 @@
 # NAME
-project_name: trial # str # directory to save the model weights and logs (HF repo)
-process_name: mame:fusion
-
+project_name: stable-diffusion-2-1-base_fusion # str # directory to save the model weights and logs (HF repo)
+process_name: sd2-1-mame:fusion
 
 # DATA
 instance_data_dir: data/fusion/images/RGB_healthy # Mandatory, str
 
 # MODEL
-pretrained_model_name_or_path: stabilityai/stable-diffusion-2-base # other: runwayml/stable-diffusion-v1-5 #Mandatory, str
+pretrained_model_name_or_path: stabilityai/stable-diffusion-2-1-base # other: runwayml/stable-diffusion-v1-5 #Mandatory, str
 pretrained_vae_name_or_path: null # str # no face VAE for mammography
 revision: fp16 # str # version of the model to use
 tokenizer_name: null # str # Pretrained tokenizer name or path if not the same as model_name
@@ -22,7 +21,7 @@ hub_model_id: null # name of the model on the hub (project_dir otherwise)
 report_to: wandb
 validation_prompt: a siemens mammogram in MLO view with high density and small area # validation prompt for logging
 num_validation_images: 4
-validation_steps: 5 # how often to log validation images
+validation_steps: 100 # how often to log validation images
 guidance_scale: 4
 
 # CHECKPOINTING

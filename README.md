@@ -28,7 +28,7 @@ The paper of this project can be found here: [MAM-E: Mammographic Synthetic Imag
 
 Additionally, the report of the project, the slides of the presentation and the poster can be found in the [documentation](https://github.com/Likalto4/diffusion-models_master/tree/main/documentation) folder.
 
-# Set up the environment (upadted 2025)
+# Set up the environment (updated 2025)
 ------------------------------------------------------------------------------------------------------------------------------
 To create the mame environment we suggest mamba/conda using our yaml file:
 
