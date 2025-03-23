@@ -1,0 +1,3 @@
+# conda available
+
+setproctitle # for setting process name ## already preinstalled

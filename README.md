@@ -28,51 +28,43 @@ The paper of this project can be found here: [MAM-E: Mammographic Synthetic Imag
 
 Additionally, the report of the project, the slides of the presentation and the poster can be found in the [documentation](https://github.com/Likalto4/diffusion-models_master/tree/main/documentation) folder.
 
-# Set up the environment (upadted 2025)
+# Set up the environment (updated 2025)
 ------------------------------------------------------------------------------------------------------------------------------
-To install the necessary packages, we suggest the following instructions:
+To create the mame environment we suggest mamba/conda using our yaml file:
 
 1. Create conda environment:
 
 ```bash 
-conda create -n mame_new python=3.10
-conda activate mame_new
+mamba env create -f envs/requirements_mamba.yaml
+mamba activate mame
 ```
 
-2. Install the necessary packages using pip.
-- We suggest starting with xformers (if you are oging to use it) as it requires installing its own torch version.
-    
-```bash
-pip install xformers
-```
+This will create a conda environment named `mame`. Before creating it, make sure that the cuda version of pytorch is being installed.
 
-- The, install all the other pip packages using the requirements file.
+2. After activating the environment, install the bitsandbytes library individually:
 
 ```bash
-pip install -r envs/requirements_mame.txt
+mamba install bitsandbytes -c conda-forge 
 ```
 
+This is done because the bitsandbytes library may try to install the pytorch cpu version if included in the requirements file.
 
-Refer to the [Hugging Face documentation](https://huggingface.co/transformers/installation.html) for more information.
+## Using other environment managers
 
+You may also install all the libraries using other environment managers, like pip. Just open the yaml file, explore the libraries and install them using your prefered manager.
 # Running the code
 ------------------------------------------------------------------------------------------------------------------------------
 
 Here is a brief description on how to run an experiment for the "fusion model".
 
-1. Go to the experiment folder:
-
-```bash
-cd experiments/with_prompt/fusion
-```
-
-2. Edit the configuration file to set the desired parameters. For example, you can change the number of epochs, the batch size, the learning rate, etc.
-- It is important to define the data location and the results directory in the configuration file.
+1. Edit the configuration file to set the desired parameters. For example, you can change the number of epochs, the batch size, the learning rate, etc.
+- It is important to define the training data location and the name of the experiment (which will be saved in the repo_path/results directory).
 - For special configuration settings (e.g. xformer usage, wandb logging, etc.), refer to the corresponding documentation.
 
-3. Run the experiment:
+2. Run the experiment:
     
 ```bash
+cd experiments/with_prompt/fusion
 python fusion_prompt.py
 ```
 
