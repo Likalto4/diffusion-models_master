@@ -601,8 +601,12 @@ def main(args_ex: argparse.Namespace):
 
     # We need to initialize the trackers we use, and also store our configuration.
     # The trackers initializes automatically on the main process.
-    if accelerator.is_main_process:
-        accelerator.init_trackers(args.logging_name, config=vars(args)) # add args to wandb
+    if accelerator.is_main_process:  
+
+        accelerator.init_trackers(args.logging_name,
+                                  config=vars(args), # add random number of 2 digits
+                                  init_kwargs={"wandb":{"name": f'{args.project_name}_{random.randint(10, 99)}'}} if args.report_to=="wandb" else None
+                                )
         wandb.save(str(config_path)) if args.report_to=="wandb" else None
 
         # save metadata file in wandb
