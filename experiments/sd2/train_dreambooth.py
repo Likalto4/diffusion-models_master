@@ -198,10 +198,11 @@ def get_full_repo_name(model_id: str, organization: Optional[str] = None, token:
         return f"{organization}/{model_id}"
 
 
-def main():
+def main(args_ex: argparse.Namespace):
     # read and set config file
-    config_path = Path(__file__).parent / 'config_file.yaml'
+    config_path = Path(args_ex.config_path)
     args = load_config(config_path)
+    
 
     # define project name
     args.project_name = Path(args.pretrained_model_name_or_path).stem + f'_{args.project_id}'
@@ -601,7 +602,7 @@ def main():
     # We need to initialize the trackers we use, and also store our configuration.
     # The trackers initializes automatically on the main process.
     if accelerator.is_main_process:
-        accelerator.init_trackers(args.log_name, config=vars(args)) # add args to wandb
+        accelerator.init_trackers(args.logging_name, config=vars(args)) # add args to wandb
         wandb.save(str(config_path)) if args.report_to=="wandb" else None
 
         # save metadata file in wandb
@@ -769,4 +770,8 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    # get config file path
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--config_path", type=str, help="path to the yaml configuration file")
+    args_ex = parser.parse_args()
+    main(args_ex)
