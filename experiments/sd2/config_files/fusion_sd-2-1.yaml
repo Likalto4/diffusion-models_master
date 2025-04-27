@@ -1,0 +1,76 @@
+# NAME
+project_id: fusion # written on top of the pretrained_name: model_(project_name)
+logging_name: fusion_prompt # for logger (e.g. wandb)
+
+# DATA
+instance_data_dir: data/fusion/images/RGB_healthy # Mandatory, str
+
+# MODEL
+pretrained_model_name_or_path: stabilityai/stable-diffusion-2-1 # other: runwayml/stable-diffusion-v1-5 #Mandatory, str
+pretrained_vae_name_or_path: null # str # no face VAE for mammography
+revision: fp16 # str # version of the model to use
+tokenizer_name: null # str # Pretrained tokenizer name or path if not the same as model_name
+
+# HUB (HF)
+push_to_hub: true
+hub_token: null
+hub_model_id: null # name of the model on the hub (project_dir otherwise)
+
+# LOGGING
+# logging_dir: logs # log directory, depricated
+report_to: wandb
+validation_prompt: a siemens mammogram in MLO view with high density and small area # validation prompt for logging
+num_validation_images: 4
+validation_steps: 100 # how often to log validation images
+guidance_scale: 4
+
+# CHECKPOINTING
+checkpointing_steps: 2000 # save state every checkpointing_steps
+checkpoints_total_limit: null # limit of total checkpoints to save
+resume_from_checkpoint: latest # wheather to resume from checkpoint
+
+# TRAINING
+train_batch_size: 16 # per device
+gradient_accumulation_steps: 16 # total batch size = train_batch_size * gradient_accumulation_steps
+num_train_epochs: 1
+max_train_steps: 4000 # overrides num_train_epochs
+train_text_encoder: true
+dataloader_num_workers: 8
+dataloader_drop_last: true
+# learning rate settings
+learning_rate: 1.0e-6 # lr after (potential) warmup
+lr_scheduler: constant
+lr_warmup_steps: 0
+lr_num_cycles: 1 #Number of hard resets of the lr in cosine_with_restarts scheduler
+lr_power: 1.0 #Power of the polynomial scheduler
+scale_lr: False # Scale the learning rate by the number of GPUs, gradient accumulation steps, and batch size
+# preprocessing
+resolution: 512
+center_crop: false # center or random crop # this is done independenly as preprocessing step
+# optimizer
+adam_beta1: 0.9
+adam_beta2: 0.999
+adam_weight_decay: 1.0e-2
+adam_epsilon: 1.0e-8
+# gradient clipping
+max_grad_norm: 1.0
+# reproducibility
+seed: 1337 # what happens when checkpointing?
+
+# MEMORY EFFICIENT TRAINING
+allow_tf32: true # on Ampere GPU only
+use_8bit_adam: true
+mixed_precision: 'fp16' # fp16 or bf16
+enable_xformers_memory_efficient_attention: true
+gradient_checkpointing: true
+set_grads_to_none: true
+local_rank: -1 # local rank for distributed training
+
+# PRIOR PRESERVATION (dreambooth)
+with_prior_preservation: false
+class_data_dir: null # Class images folder for prior preservation
+class_prompt: null # Class prompt for prior preservation
+prior_loss_weight: 1.0 # prior preservation loss weight
+num_class_images: 100
+sample_batch_size: 4
+prior_generation_precision: null # fp16, bf16, or fp32
