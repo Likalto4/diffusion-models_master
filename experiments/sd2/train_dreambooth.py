@@ -31,7 +31,6 @@ import accelerate
 import numpy as np
 import torch
 import torch.nn.functional as F
-import torch.utils.checkpoint
 import transformers
 from accelerate import Accelerator
 from accelerate.logging import get_logger
@@ -202,7 +201,6 @@ def main(args_ex: argparse.Namespace):
     # read and set config file
     config_path = Path(args_ex.config_path)
     args = load_config(config_path)
-    
 
     # define project name
     args.project_name = Path(args.pretrained_model_name_or_path).stem + f'_{args.project_id}'

@@ -7,3 +7,6 @@ inference_images/
 # pychache
 __pycache__/
 flagged/
+
+# gradio
+*.gradio/
