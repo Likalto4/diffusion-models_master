@@ -1,5 +1,5 @@
 # NAME
-project_id: fusion # written on top of the pretrained_name: model_(project_name)
+project_id: test # written on top of the pretrained_name: model_(project_name)
 logging_name: fusion_prompt # for logger (e.g. wandb)
 
 # DATA

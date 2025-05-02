@@ -16,7 +16,7 @@
 
 ![alt text](figures/mam-e_fusion.png "Mam-E")
 
-This repository contains the code derived from the Master thesis project on mammographic image generation using diffusion models. This project is part of the final assessment to obtain the Joint Master's degree in Medical Imaging and Applications (MAIA) at the University of Girona (Spain), the University of Cassino and Southern Lazio (Italy) and the University of Bourgogne (France).
+This repository contains the source code for the Master thesis project on mammographic image generation using diffusion models. This project was developed under the Joint Master's degree in Medical Imaging and Applications (MAIA) teaching program, at the University of Girona (Spain), the University of Cassino and Southern Lazio (Italy) and the University of Bourgogne (France).
 
 # Description
 ------------------------------------------------------------------------------------------------------------------------------
@@ -55,21 +55,33 @@ You may also install all the libraries using other environment managers, like pi
 # Running the code
 ------------------------------------------------------------------------------------------------------------------------------
 
-Here is a brief description on how to run an experiment for the "fusion model".
+## Full-field mammogram generation
 
-1. Edit the configuration file to set the desired parameters. For example, you can change the number of epochs, the batch size, the learning rate, etc.
-- It is important to define the training data location and the name of the experiment (which will be saved in the repo_path/results directory).
+1. Edit the configuration [file](experiments/sd2/config_files) you choose with the desired parameters. For example, you can change the number of epochs, the batch size, the learning rate, etc ([example](experiments/sd2/config_files/fusion_sd-2-1.yaml))
+- It is important to define the training data location and the name of the experiment
 - For special configuration settings (e.g. xformer usage, wandb logging, etc.), refer to the corresponding documentation.
+- Results will be saved in the `results` folder, in the repository root.
 
 2. Run the experiment:
     
 ```bash
-cd experiments/with_prompt/fusion
-python fusion_prompt.py
+cd experiments/sd2
+
+python train_dreambooth.py --config_path=config_files/<your_config_file>.yaml
 ```
 
 Note: The fusion model using batch size of 16 (with variable graident accumulation steps), 512x512 image, with xformers activated, 8 bit adam, gradient checkpointing and fp16 mixed precision training, requires around 20GB of GPU memory.
 
+## Lesion Inpainting
+
+1. Edit the appropriate inpainting configuration file. Notice the additional parameters for inpainting such as validation image and mask paths ([example](experiments/sd2/config_files/inpainting_sd-2.yaml)).
+
+2. Run the inpainting experiment:
+
+```bash
+cd experiments/sd2
+python train_inpainting.py --config_path=config_files/<your_config_file>.yaml
+```
 
 # Repository structure
 ------------------------------------------------------------------------------------------------------------------------------
@@ -81,12 +93,9 @@ The repository is structured as follows:
     - This means you can have virtually any directory structure that you want for your data.
 - dataset_analysis: code for the analysis of the dataset. This includes constructing the dataset metadata, saving png files, creating masks, prompt, etc.
 - datasets_local: contains useful functions for the dataset creation.
-- envs: contains the conda and pip environment files.
-- experiments: contains the code for the main experiments. It is divided in several sections. The main ones are:: 
-    - dreambooth: original code for the Dreambooth model.
-    - inference: code for the inference of the models, including GradIO GUI implementations.
-    - inpainting: for the inpainting experiments.
-    - with_prompt: main SD and Dreambooth experiments.
+- documentation: contains the report, slides and poster of the project.
+- envs: contains the conda (and pip) environment files.
+- experiments: contains the code for the main experiments. It is divided in old experiments (original code) and updated code (duch as sd2).
 - figures: contains the figures used in the README.
 - generation (future work): for the use of synthetic images in the training of CAD systems.
 - results (not included in the repository): contains the weights, pipeline configuration files and some logging files for the experiments. (The same information can be found in the Hugging Face repository of the first author).
