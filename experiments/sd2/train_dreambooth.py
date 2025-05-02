@@ -323,6 +323,8 @@ def main(args_ex: argparse.Namespace):
         elif args.project_dir is not None: # create output directory if it doesn't exist
             os.makedirs(args.project_dir, exist_ok=True)
 
+    ###### LOAD MODELS ######
+
     # Load the tokenizer
     if args.tokenizer_name:
         tokenizer = AutoTokenizer.from_pretrained(args.tokenizer_name, revision=args.revision, use_fast=False)
@@ -459,6 +461,8 @@ def main(args_ex: argparse.Namespace):
         weight_decay=args.adam_weight_decay,
         eps=args.adam_epsilon,
     )
+
+    ##### DATA PREPARATION #####
 
     # Dataset and DataLoaders creation:
     dataset = load_dataset(

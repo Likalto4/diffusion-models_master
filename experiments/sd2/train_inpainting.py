@@ -22,51 +22,54 @@ import hashlib
 import itertools
 import logging
 import math
-# import warnings
-from pathlib import Path
 from typing import Optional
+from functools import partial
 
 import accelerate
 import numpy as np
 import torch
 import torch.nn.functional as F
-import torch.utils.checkpoint
 import transformers
 from accelerate import Accelerator
 from accelerate.logging import get_logger
 from accelerate.utils import ProjectConfiguration, set_seed
 from huggingface_hub import HfFolder, Repository, create_repo, whoami
 from packaging import version
-from PIL import Image, ImageDraw
+from PIL import Image
 from torch.utils.data import Dataset
 from torchvision import transforms
 from tqdm.auto import tqdm
 from transformers import AutoTokenizer, PretrainedConfig
-from datasets import load_dataset
 import diffusers
 from diffusers import (
     AutoencoderKL,
     DDPMScheduler,
     DiffusionPipeline,
-    StableDiffusionPipeline,
     DPMSolverMultistepScheduler,
     UNet2DConditionModel,
     DDIMScheduler,
 )
-import random
+import setproctitle
 from diffusers.optimization import get_scheduler
-from diffusers.utils import check_min_version, is_wandb_available
+from diffusers.utils import is_wandb_available
 from diffusers.utils.import_utils import is_xformers_available
-
-
 if is_wandb_available():
     import wandb
 
-# Will error if the minimal version of diffusers is not installed. Remove at your own risks.
-check_min_version("0.15.0.dev0")
-
 logger = get_logger(__name__)
 
+def load_config(config_path:Path): 
+    """Get args namespace from yaml configuration file
+
+    Args:
+        config_path (Path): path to the yaml configuration file
+
+    Returns:
+        argparse.Namespace: namespace args with the configuration
+    """
+    with open(config_path) as file:
+        config = yaml.load(file, Loader=yaml.FullLoader)
+    return argparse.Namespace(**config)
 
 def log_validation(text_encoder, tokenizer, unet, vae, args, accelerator, weight_dtype, epoch):
     logger.info(
@@ -75,9 +78,9 @@ def log_validation(text_encoder, tokenizer, unet, vae, args, accelerator, weight
     )
     
     # load input image
-    input_image = Image.open(args.val_input_image_path).convert("RGB")
+    input_image = Image.open(repo_path / args.val_input_image_path).convert("RGB")
     # load mask image
-    mask_image = Image.open(args.val_mask_image_path).convert("RGB")
+    mask_image = Image.open(repo_path / args.val_mask_image_path).convert("RGB")
     
     # create pipeline (note: unet and vae are loaded again in float32)
     pipeline = DiffusionPipeline.from_pretrained(
@@ -130,12 +133,62 @@ def import_model_class_from_model_name_or_path(pretrained_model_name_or_path: st
         from transformers import CLIPTextModel
 
         return CLIPTextModel
-    elif model_class == "RobertaSeriesModelWithTransformation":
-        from diffusers.pipelines.alt_diffusion.modeling_roberta_series import RobertaSeriesModelWithTransformation
+    # elif model_class == "RobertaSeriesModelWithTransformation":
+    #     from diffusers.pipelines.alt_diffusion.modeling_roberta_series import RobertaSeriesModelWithTransformation
 
-        return RobertaSeriesModelWithTransformation
+    #     return RobertaSeriesModelWithTransformation
     else:
         raise ValueError(f"{model_class} is not supported.")
+    
+def read_mask(instance_path):
+    """simply read the mask from the path using PIL"""
+    instance_path = Path(instance_path) # be sure that is a path object
+    mask_path  = repo_path / 'data/masks' / instance_path.parent.name / instance_path.name
+    mask = Image.open(mask_path)
+    return mask
+
+def collate_fn(examples, tokenizer, with_prior_preservation:False):
+    input_ids = [example["instance_prompt_ids"] for example in examples]
+    pixel_values = [example["instance_images"] for example in examples]
+
+    # Concat class and instance examples for prior preservation.
+    # We do this to avoid doing two forward passes.
+    if with_prior_preservation:
+        input_ids += [example["class_prompt_ids"] for example in examples]
+        pixel_values += [example["class_images"] for example in examples]
+        pior_pil = [example["class_PIL_images"] for example in examples]
+
+    masks = []
+    masked_images = []
+    for example in examples:
+        pil_image = example["PIL_images"]
+        # generate a random mask
+        mask = read_mask(example['instance_path'])
+        # prepare mask and masked image
+        mask, masked_image = prepare_mask_and_masked_image(pil_image, mask)
+
+        masks.append(mask)
+        masked_images.append(masked_image)
+
+    if with_prior_preservation:
+        for pil_image in pior_pil:
+            # generate a random mask
+            mask = read_mask(example['instance_path'])
+            # prepare mask and masked image
+            mask, masked_image = prepare_mask_and_masked_image(pil_image, mask)
+
+            masks.append(mask)
+            masked_images.append(masked_image)
+
+    pixel_values = torch.stack(pixel_values)
+    pixel_values = pixel_values.to(memory_format=torch.contiguous_format).float()
+
+    input_ids = tokenizer.pad({"input_ids": input_ids}, padding=True, return_tensors="pt").input_ids
+    masks = torch.stack(masks)
+    masked_images = torch.stack(masked_images)
+    batch = {"input_ids": input_ids, "pixel_values": pixel_values, "masks": masks, "masked_images": masked_images}
+    
+    return batch
 
 def prepare_mask_and_masked_image(image, mask):
     image = np.array(image.convert("RGB"))
@@ -268,7 +321,6 @@ class PromptDataset(Dataset):
         example["index"] = index
         return example
 
-
 def get_full_repo_name(model_id: str, organization: Optional[str] = None, token: Optional[str] = None):
     if token is None:
         token = HfFolder.get_token()
@@ -278,23 +330,27 @@ def get_full_repo_name(model_id: str, organization: Optional[str] = None, token:
     else:
         return f"{organization}/{model_id}"
 
-
-def main():
-    ###### SETUP ######
+def main(args_ex: argparse.Namespace):
     # read and set config file
-    config_path = 'config_file.yaml' # configuration file path (beter to call it from the args parser)
-    with open(config_path) as file: # expects the config file to be in the same directory
-        config = yaml.load(file, Loader=yaml.FullLoader)
-    args = argparse.Namespace(**config) # parse the config file
+    config_path = Path(args_ex.config_path)
+    args = load_config(config_path)
     
-    logging_dir = Path(args.output_dir, args.logging_dir) # path for logging
+    # define project name
+    args.project_name = Path(args.pretrained_model_name_or_path).stem + f'_{args.project_id}'
+    
+    # set process title for gpu name
+    setproctitle.setproctitle(args.project_name)
+
+    # relativize args paths
+    args.project_dir = repo_path / 'results' / args.project_name
+    args.instance_data_dir = repo_path / args.instance_data_dir
 
     accelerator_project_config = ProjectConfiguration(total_limit=args.checkpoints_total_limit)
     accelerator = Accelerator( # start accelerator
         gradient_accumulation_steps=args.gradient_accumulation_steps,
         mixed_precision=args.mixed_precision, 
         log_with=args.report_to, # logger (tb or wandb)
-        project_dir=logging_dir, # defined above
+        project_dir=args.project_dir, # project directory
         project_config=accelerator_project_config, # project config defined above
     )
 
@@ -385,19 +441,19 @@ def main():
     if accelerator.is_main_process:
         if args.push_to_hub:
             if args.hub_model_id is None:
-                repo_name = get_full_repo_name(Path(args.output_dir).name, token=args.hub_token)
+                repo_name = get_full_repo_name(Path(args.project_dir).name, token=args.hub_token)
             else:
                 repo_name = args.hub_model_id
             create_repo(repo_name, exist_ok=True, token=args.hub_token)
-            repo = Repository(args.output_dir, clone_from=repo_name, token=args.hub_token)
+            repo = Repository(args.project_dir, clone_from=repo_name, token=args.hub_token)
 
-            with open(os.path.join(args.output_dir, ".gitignore"), "w+") as gitignore:
+            with open(os.path.join(args.project_dir, ".gitignore"), "w+") as gitignore:
                 if "step_*" not in gitignore:
                     gitignore.write("step_*\n")
                 if "epoch_*" not in gitignore:
                     gitignore.write("epoch_*\n")
-        elif args.output_dir is not None: # create output directory if it doesn't exist
-            os.makedirs(args.output_dir, exist_ok=True)
+        elif args.project_dir is not None: # create output directory if it doesn't exist
+            os.makedirs(args.project_dir, exist_ok=True)
 
     ###### LOAD MODELS ########
     # Load the tokenizer
@@ -549,57 +605,9 @@ def main():
         center_crop=args.center_crop,
     )
 
-    def read_mask(instance_path):
-        instance_path = Path(instance_path) # be sure that is a path object
-        mask_path  = repo_path / 'data/masks' / instance_path.parent.name / instance_path.name
-        mask = Image.open(mask_path)
-        return mask
-
-
-    def collate_fn(examples):
-        input_ids = [example["instance_prompt_ids"] for example in examples]
-        pixel_values = [example["instance_images"] for example in examples]
-
-        # Concat class and instance examples for prior preservation.
-        # We do this to avoid doing two forward passes.
-        if args.with_prior_preservation:
-            input_ids += [example["class_prompt_ids"] for example in examples]
-            pixel_values += [example["class_images"] for example in examples]
-            pior_pil = [example["class_PIL_images"] for example in examples]
-
-        masks = []
-        masked_images = []
-        for example in examples:
-            pil_image = example["PIL_images"]
-            # generate a random mask
-            mask = read_mask(example['instance_path'])
-            # prepare mask and masked image
-            mask, masked_image = prepare_mask_and_masked_image(pil_image, mask)
-
-            masks.append(mask)
-            masked_images.append(masked_image)
-
-        if args.with_prior_preservation:
-            for pil_image in pior_pil:
-                # generate a random mask
-                mask = read_mask(example['instance_path'])
-                # prepare mask and masked image
-                mask, masked_image = prepare_mask_and_masked_image(pil_image, mask)
-
-                masks.append(mask)
-                masked_images.append(masked_image)
-
-        pixel_values = torch.stack(pixel_values)
-        pixel_values = pixel_values.to(memory_format=torch.contiguous_format).float()
-
-        input_ids = tokenizer.pad({"input_ids": input_ids}, padding=True, return_tensors="pt").input_ids
-        masks = torch.stack(masks)
-        masked_images = torch.stack(masked_images)
-        batch = {"input_ids": input_ids, "pixel_values": pixel_values, "masks": masks, "masked_images": masked_images}
-        return batch
-
     train_dataloader = torch.utils.data.DataLoader(
-        train_dataset, batch_size=args.train_batch_size, shuffle=True, collate_fn=collate_fn
+        train_dataset, batch_size=args.train_batch_size, shuffle=True,
+        collate_fn=partial(collate_fn, tokenizer=tokenizer, with_prior_preservation=args.with_prior_preservation),
     )
 
     # Scheduler and math around the number of training steps.
@@ -675,7 +683,7 @@ def main():
             path = os.path.basename(args.resume_from_checkpoint)
         else:
             # Get the most recent checkpoint
-            dirs = os.listdir(args.output_dir)
+            dirs = os.listdir(args.project_dir)
             dirs = [d for d in dirs if d.startswith("checkpoint")]
             dirs = sorted(dirs, key=lambda x: int(x.split("-")[1]))
             path = dirs[-1] if len(dirs) > 0 else None
@@ -687,7 +695,7 @@ def main():
             args.resume_from_checkpoint = None
         else:
             accelerator.print(f"Resuming from checkpoint {path}")
-            accelerator.load_state(os.path.join(args.output_dir, path))
+            accelerator.load_state(os.path.join(args.project_dir, path))
             global_step = int(path.split("-")[1])
 
             resume_global_step = global_step * args.gradient_accumulation_steps
@@ -798,7 +806,7 @@ def main():
 
                 if accelerator.is_main_process:
                     if global_step % args.checkpointing_steps == 0:
-                        save_path = os.path.join(args.output_dir, f"checkpoint-{global_step}")
+                        save_path = os.path.join(args.project_dir, f"checkpoint-{global_step}")
                         accelerator.save_state(save_path)
                         logger.info(f"Saved state to {save_path}")
                     # validation images
@@ -828,7 +836,7 @@ def main():
             safety_checker=None,
             revision=args.revision,
         )
-        pipeline.save_pretrained(args.output_dir)
+        pipeline.save_pretrained(args.project_dir)
 
         if args.push_to_hub:
             logger.info("Pushing to the hub...")
@@ -838,4 +846,11 @@ def main():
     accelerator.end_training()
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--config_path",
+        type=str,
+        help="Path to the yaml config file.",
+    )
+    args_ex = parser.parse_args()
+    main(args_ex)
