@@ -50,6 +50,7 @@ from diffusers import (
     DDIMScheduler,
 )
 import setproctitle
+import random
 from diffusers.optimization import get_scheduler
 from diffusers.utils import is_wandb_available
 from diffusers.utils.import_utils import is_xformers_available
@@ -659,8 +660,10 @@ def main(args_ex: argparse.Namespace):
     # We need to initialize the trackers we use, and also store our configuration.
     # The trackers initializes automatically on the main process.
     if accelerator.is_main_process:
-        run = os.path.split(__file__)[-1].split(".")[0]
-        accelerator.init_trackers(run, config=vars(args)) # add args to wandb
+        accelerator.init_trackers(args.logging_name,
+                                  config=vars(args),
+                                  init_kwargs={"wandb":{"name": f'{args.project_name}_{random.randint(10, 99)}'}} if args.report_to=="wandb" else None
+                                  ) # add args to wandb
         wandb.save(str(config_path)) if args.report_to=="wandb" else None
 
     ###### TRAINING ########

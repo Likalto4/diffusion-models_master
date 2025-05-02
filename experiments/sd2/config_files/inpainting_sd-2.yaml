@@ -1,6 +1,7 @@
 # NAME
 project_id: test # written on top of the pretrained_name: model_(project_name)
-logging_name: fusion_prompt # for logger (e.g. wandb)
+logging_name: inpainting_lesions # project name for logger (e.g. wandb)
+# the run name will be defined by the model_name + project id + random number
 
 # DATA
 instance_data_dir: /home/ricardo/Documents/PhD/fixed/diffusion-models_master/data/images/breast40k_RGB_wlesions # Mandatory, str
