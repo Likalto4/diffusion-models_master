@@ -16,10 +16,11 @@ import pandas as pd
 from PIL import Image
 import gradio as gr
 from gradio import Interface
+import numpy as np
 
 def main():
     # define model and load weights
-    model_dir='Likalto4/mammo40k_healthy-lesion'
+    model_dir = 'Likalto4/mammo_lesion-inpainting'
     pipe = DiffusionPipeline.from_pretrained(
         model_dir,
         safety_checker=None,
@@ -52,7 +53,16 @@ def main():
     ### fn function ###
 
     # sketchpad with breast image as background
-    sketch = gr.Image(value=input_im, type='pil', interactive=True, tool='sketch', invert_colors=True, image_mode='L').style(height=700, width=700)
+    sketch = gr.ImageEditor(
+        value=input_im,
+        type='pil',
+        image_mode='RGB',
+        interactive=True,
+        label="Healthy mammogram",
+        height=512,
+        width=512,
+    )
+    
     guidance_slider = gr.Slider(
         minimum=0,
         maximum=10,
@@ -85,7 +95,12 @@ def main():
 
     def fn(sketch, guidance_scale, diffusion_steps, seed_checkbox, seed_value):
         # get mask from input sketch
-        mask = sketch['mask']
+        # get mask from input sketch
+        mask = sketch['layers'][0]
+        # saturate all non-zero values to 1
+        mask = np.array(mask)
+        mask[mask > 0] = 255
+        mask = Image.fromarray(mask.astype(np.uint8), mode='RGB')
         ### generate images ###
         #internal HP
         prompt = "a mammogram with a lesion"

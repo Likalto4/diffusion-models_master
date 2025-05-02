@@ -1,14 +1,14 @@
 # settings:
-pretrained_model_name_or_path: runwayml/stable-diffusion-inpainting
+pretrained_model_name_or_path: runwayml/stable-diffusion-inpainting # stabilityai/stable-diffusion-2-inpainting
 pretrained_vae_name_or_path: null # str # no face VAE for mammography
 # version of the model to use
-revision: fp16 # str # type of model kept for fp16 optimization
+revision: null # str # type of model kept for fp16 optimization
 # Pretrained tokenizer name or path if not the same as model_name
 tokenizer_name: null # str
 # data:
-instance_data_dir: /home/ricardo/master_thesis/diffusion-models_master/data/images/breast40k_RGB_wlesions # Mandatory, str
+instance_data_dir: /home/ricardo/Documents/PhD/fixed/diffusion-models_master/data/images/breast40k_RGB_wlesions # Mandatory, str
 instance_prompt: a mammogram with a lesion
-output_dir: /home/ricardo/master_thesis/diffusion-models_master/results/mammo_lesion-inpainting # Mandatory, str
+output_dir: /home/ricardo/Documents/PhD/fixed/diffusion-models_master/results/mammo_lesion-inpainting # Mandatory, str
 # hub:
 push_to_hub: true
 hub_token: null
@@ -19,8 +19,8 @@ report_to: wandb
 validation_prompt: a mammogram with a lesion # validation prompt for logging
 num_validation_images: 4
 validation_steps: 250 # how often to log validation images
-val_input_image_path: /home/ricardo/master_thesis/diffusion-models_master/experiments/inpainting/data/pil_image.png
-val_mask_image_path: /home/ricardo/master_thesis/diffusion-models_master/experiments/inpainting/data/mask.png
+val_input_image_path: /home/ricardo/Documents/PhD/fixed/diffusion-models_master/experiments/old_experiments/inpainting/data/pil_image.png
+val_mask_image_path: /home/ricardo/Documents/PhD/fixed/diffusion-models_master/experiments/old_experiments/inpainting/data/mask.png
 # prior_preservation:
 with_prior_preservation: false
 class_data_dir: null # Class images folder for prior preservation
@@ -30,7 +30,7 @@ num_class_images: 100
 sample_batch_size: 4
 prior_generation_precision: null # fp16, bf16, or fp32
 # checkpointing:
-checkpointing_steps: 3000 # save state every checkpointing_steps
+checkpointing_steps: 30000 # save state every checkpointing_steps
 checkpoints_total_limit: null # limit of total checkpoints to save
 resume_from_checkpoint: null # wheather to resume from checkpoint
 # training:
