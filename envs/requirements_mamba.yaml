@@ -1,4 +1,4 @@
-name: mame
+name: mame_2
 channels:
   - conda-forge
 dependencies:
@@ -8,7 +8,7 @@ dependencies:
   - pip-autoremove
   # cuda-related
   - pytorch
-  - xformers
+  - xformers`
   - torchvision
   # basic
   - numpy
@@ -21,5 +21,7 @@ dependencies:
   - datasets
   - transformers
   - diffusers
+  # GUI
+  - gradio
 
 # - bitsandbytes # install individually
